@@ -67,15 +67,15 @@ public class RouteTester {
     }
 
     /**
-     * Teste une requête contre une seule route, absente de la Gateway (route en cours d'édition, ADR 0011).
+     * Teste une requête contre des routes absentes de la Gateway (routes en cours d'édition, ADR 0011).
      *
      * @param request requête à tester, préalablement validée par {@link TestRequest#validate()}
-     * @param route route construite par la Gateway à partir de sa définition
-     * @param definition définition de la route, pour rejouer ses filtres
-     * @return l'évaluation de la route et, si elle correspond, la simulation de ses filtres
+     * @param routes routes construites par la Gateway, dans l'ordre d'évaluation
+     * @param definitions définitions des routes par identifiant, pour rejouer leurs filtres
+     * @return l'évaluation de chaque route et la simulation de la route retenue
      */
-    public Mono<TestResult> test(final TestRequest request, final Route route, final RouteDefinition definition) {
-        return evaluate(route, request).map(evaluated -> toResult(request, List.of(evaluated), Map.of(route.getId(), definition)));
+    public Mono<TestResult> test(final TestRequest request, final List<Route> routes, final Map<String, RouteDefinition> definitions) {
+        return evaluateAll(routes, request).map(evaluated -> toResult(request, evaluated, definitions));
     }
 
     private Mono<List<Evaluated>> evaluateAll(final List<Route> routes, final TestRequest request) {

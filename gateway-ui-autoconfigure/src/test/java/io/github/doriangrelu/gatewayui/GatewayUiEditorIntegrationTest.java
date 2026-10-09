@@ -206,4 +206,54 @@ class GatewayUiEditorIntegrationTest extends GatewayUiIntegrationTestSupport {
                 .expectStatus().isOk()
                 .expectBody();
     }
+
+    @Test
+    void editorTesterRendersTheTesterResultForTheEditedRoute() {
+        tester("""
+                {"route": {"id": "draft", "uri": "${orders.url}", "order": 0,
+                           "predicates": [{"name": "Path", "values": {"patterns": "/shop/{id}"}}],
+                           "filters": [{"name": "SetPath", "values": {"template": "/v3/items/{id}"}}]},
+                 "routes": [], "context": false, "method": "GET", "path": "/shop/5", "host": "", "headers": "X-Id: 1"}
+                """)
+                .value(body -> assertThat(body)
+                        .startsWith("<div id=\"tester-result\">")
+                        .contains("http://orders.test:8080/v3/items/5")
+                        .contains("<span class=\"route-link mono\">draft</span>")
+                        .doesNotContain("href=\"/gateway-ui/routes/draft\""));
+    }
+
+    @Test
+    void editorTesterEvaluatesTheEditedRouteWithinTheConfiguration() {
+        tester("""
+                {"route": {"id": "draft", "uri": "http://draft.test", "order": 0,
+                           "predicates": [{"name": "Path", "values": {"patterns": "/api/orders/**"}}], "filters": []},
+                 "routes": [{"id": "orders", "uri": "http://orders.test:8080", "order": 5,
+                             "predicates": [{"name": "Path", "values": {"patterns": "/api/orders/**"}}], "filters": []}],
+                 "context": true, "method": "GET", "path": "/api/orders/1"}
+                """)
+                .value(body -> assertThat(body)
+                        .contains("http://draft.test:80/api/orders/1")
+                        .containsSubsequence(">draft<", ">orders<")
+                        .contains("chip-shadowed"));
+    }
+
+    @Test
+    void editorTesterReportsAnInvalidRoute() {
+        tester("""
+                {"route": {"id": "draft", "uri": "http://draft.test", "order": 0, "predicates": [],
+                           "filters": [{"name": "Nope", "values": {}}]},
+                 "context": false, "method": "GET", "path": "/"}
+                """)
+                .value(body -> assertThat(body).contains("alert-error").contains("Invalid route"));
+    }
+
+    private WebTestClient.BodySpec<String, ?> tester(final String body) {
+        return client.post().uri("/gateway-ui/api/editor/test")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class);
+    }
 }

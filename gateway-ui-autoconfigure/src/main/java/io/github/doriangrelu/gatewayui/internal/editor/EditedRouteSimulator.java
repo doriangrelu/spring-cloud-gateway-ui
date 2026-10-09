@@ -16,11 +16,14 @@
 package io.github.doriangrelu.gatewayui.internal.editor;
 
 import java.net.URI;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 import io.github.doriangrelu.gatewayui.internal.i18n.Message;
 import io.github.doriangrelu.gatewayui.internal.tester.RouteTester;
@@ -31,6 +34,7 @@ import org.springframework.cloud.gateway.filter.FilterDefinition;
 import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
 import org.springframework.cloud.gateway.handler.predicate.PredicateDefinition;
 import org.springframework.cloud.gateway.handler.predicate.RoutePredicateFactory;
+import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.route.RouteDefinition;
 import org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator;
 import org.springframework.cloud.gateway.support.ConfigurationService;
@@ -71,18 +75,49 @@ public class EditedRouteSimulator {
     }
 
     /**
-     * Teste une requête contre la route éditée.
+     * Teste une requête contre la route éditée seule.
      *
      * @param route route éditée
      * @param request requête à tester, préalablement validée
      * @return le résultat, ou l'erreur qui empêche la Gateway de construire la route
      */
     public Mono<Outcome> simulate(final EditableRoute route, final TestRequest request) {
-        return Mono.fromCallable(() -> definition(route))
-                .flatMap(definition -> locators.create(definition).getRoutes().next()
-                        .flatMap(built -> tester.test(request, built, definition)))
+        return simulate(route, List.of(), List.of(), request);
+    }
+
+    /**
+     * Teste une requête contre la route éditée, évaluée avec d'autres routes : on voit quelle route prend la requête,
+     * et laquelle est masquée.
+     *
+     * <p>Comme le {@code CachingRouteLocator} de la Gateway, les routes sont triées par ordre, sans changer l'ordre de
+     * routes de même ordre : celles de la configuration, puis celles déclarées en Java.
+     *
+     * @param route route éditée
+     * @param others autres routes de l'espace de travail ; une route de même identifiant que la route éditée est ignorée
+     * @param javaRoutes routes déclarées en Java dans la Gateway, inchangées
+     * @param request requête à tester, préalablement validée
+     * @return le résultat, ou l'erreur qui empêche la Gateway de construire une des routes
+     */
+    public Mono<Outcome> simulate(final EditableRoute route, final List<EditableRoute> others, final List<Route> javaRoutes,
+            final TestRequest request) {
+        return Mono.fromCallable(() -> definitions(route, others))
+                .flatMap(definitions -> locators.create(definitions.values()).getRoutes().collectList()
+                        .map(built -> ordered(built, javaRoutes))
+                        .flatMap(routes -> tester.test(request, routes, definitions)))
                 .map(Outcome::success)
                 .onErrorResume(error -> Mono.just(Outcome.failure(Message.of("editor.simulation.invalid", describe(error)))));
+    }
+
+    private Map<String, RouteDefinition> definitions(final EditableRoute route, final List<EditableRoute> others) {
+        final Map<String, RouteDefinition> definitions = new LinkedHashMap<>();
+        final RouteDefinition edited = definition(route);
+        definitions.put(edited.getId(), edited);
+        others.stream().map(this::definition).forEach(definition -> definitions.putIfAbsent(definition.getId(), definition));
+        return definitions;
+    }
+
+    private static List<Route> ordered(final List<Route> built, final List<Route> javaRoutes) {
+        return Stream.concat(built.stream(), javaRoutes.stream()).sorted(Comparator.comparingInt(Route::getOrder)).toList();
     }
 
     /**
@@ -168,12 +203,12 @@ public class EditedRouteSimulator {
     public interface RouteDefinitionRouteLocatorFactory {
 
         /**
-         * Constructeur de routes limité à une définition.
+         * Constructeur de routes limité à des définitions.
          *
-         * @param definition définition de la route éditée
+         * @param definitions définitions des routes éditées
          * @return le constructeur de routes
          */
-        RouteDefinitionRouteLocator create(RouteDefinition definition);
+        RouteDefinitionRouteLocator create(Collection<RouteDefinition> definitions);
 
         /**
          * Constructeur de routes de la Gateway : ses fabriques, ses {@code default-filters}, et une erreur levée (au lieu
@@ -194,7 +229,7 @@ public class EditedRouteSimulator {
             if (gatewayProperties != null) {
                 properties.setDefaultFilters(gatewayProperties.getDefaultFilters());
             }
-            return definition -> new RouteDefinitionRouteLocator(() -> Flux.just(definition), (List) predicates, (List) filters,
+            return definitions -> new RouteDefinitionRouteLocator(() -> Flux.fromIterable(definitions), (List) predicates, (List) filters,
                     properties, configurationService);
         }
     }

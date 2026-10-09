@@ -10,6 +10,7 @@
 @param TestRequest request
 @param TestResult result
 @param Message error
+@param boolean editor = false
 <div id="tester-result">
     @if(error != null)
         <div class="alert alert-error">${ui.message(error)}</div>
@@ -21,7 +22,7 @@
             </div>
         @else
             <div class="verdict verdict-match">
-                <span class="verdict-title">${ui.message("result.route")} <a class="route-link" href="${ui.routeUrl(result.selectedRouteId())}">${result.selectedRouteId()}</a></span>
+                <span class="verdict-title">${ui.message("result.route")} @template.routeRef(ui = ui, id = result.selectedRouteId(), link = !editor)</span>
                 <span class="verdict-call mono">
                     <span class="method">${request.method()}</span> ${result.simulation().targetUrl()}
                 </span>
@@ -92,7 +93,7 @@
                 @for(Evaluation evaluation : result.evaluations())
                     <tr class="${evaluation.selected() ? "row-selected" : ""}">
                         <td class="num mono">${evaluation.order()}</td>
-                        <td><a class="route-link" href="${ui.routeUrl(evaluation.routeId())}">${evaluation.routeId()}</a></td>
+                        <td>@template.routeRef(ui = ui, id = evaluation.routeId(), link = !editor)</td>
                         <td>
                             @if(evaluation.selected())
                                 <span class="chip chip-match">${ui.message("result.selected")}</span>

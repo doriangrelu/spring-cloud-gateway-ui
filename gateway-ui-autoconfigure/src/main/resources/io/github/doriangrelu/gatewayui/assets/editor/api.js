@@ -5,8 +5,10 @@
 const root = document.getElementById('editor');
 const base = root.dataset.api;
 
-function headers(json) {
-    const result = { Accept: json ? 'application/json' : 'application/yaml' };
+const ACCEPT = { json: 'application/json', yaml: 'application/yaml', html: 'text/html' };
+
+function headers(accept) {
+    const result = { Accept: ACCEPT[accept] };
     if (root.dataset.csrfHeader && root.dataset.csrfToken) {
         result[root.dataset.csrfHeader] = root.dataset.csrfToken;
     }
@@ -21,17 +23,17 @@ async function get(path) {
     return response.json();
 }
 
-async function post(path, body, json = true) {
+async function post(path, body, accept = 'json') {
     const response = await fetch(base + path, {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { ...headers(json), 'Content-Type': 'application/json' },
+        headers: { ...headers(accept), 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
     if (!response.ok) {
         throw new Error(path + ' : HTTP ' + response.status);
     }
-    return json ? response.json() : response.text();
+    return accept === 'json' ? response.json() : response.text();
 }
 
 export const Api = {
@@ -39,7 +41,7 @@ export const Api = {
     javaRoutes: () => get('/java-routes'),
     factories: () => get('/factories'),
     catalog: () => get('/catalog'),
-    yaml: (routes, comments) => post('/yaml', { routes, comments }, false),
-    simulate: (route, request) => post('/simulate', { route, ...request }),
+    yaml: (routes, comments) => post('/yaml', { routes, comments }, 'yaml'),
+    test: (route, routes, request) => post('/test', { route, routes, ...request }, 'html'),
     advice: (route, routes) => post('/advice', { route, routes })
 };

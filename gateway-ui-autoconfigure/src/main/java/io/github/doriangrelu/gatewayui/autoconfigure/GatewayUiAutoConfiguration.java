@@ -203,9 +203,10 @@ public class GatewayUiAutoConfiguration {
             final GatewayInspector inspector, final ServiceCatalog serviceCatalog, final RouteTester routeTester,
             final EditorService editorService, final Catalog catalog) {
         final UiContexts contexts = new UiContexts(properties.basePath(), properties.defaultLocale());
-        final GatewayUiHandler handler = new GatewayUiHandler(contexts, new TemplateRenderer(), inspector, serviceCatalog,
+        final TemplateRenderer renderer = new TemplateRenderer();
+        final GatewayUiHandler handler = new GatewayUiHandler(contexts, renderer, inspector, serviceCatalog,
                 routeTester, catalog);
-        return GatewayUiRouter.create(properties.basePath(), handler, new EditorApiHandler(editorService, contexts, catalog));
+        return GatewayUiRouter.create(properties.basePath(), handler, new EditorApiHandler(editorService, contexts, catalog, renderer));
     }
 
     /**

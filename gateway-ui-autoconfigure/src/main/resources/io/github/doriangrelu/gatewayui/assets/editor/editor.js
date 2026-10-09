@@ -11,14 +11,13 @@ import { Palette } from './palette.js';
 import { Workspace } from './workspace.js';
 
 const DELAY = 300;
-const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 const STATUS_CHIPS = { unchanged: '', modified: 'chip-shadowed', new: 'chip-match', removed: 'chip-error', java: '' };
 
 let selection = { kind: 'target', index: 0 };
 let exportMode = 'current';
-let test = { method: 'GET', path: null };
 let timer = null;
 let sequence = 0;
+let pathPending = true;
 
 const el = id => document.getElementById(id);
 
@@ -47,7 +46,7 @@ const items = kind => (kind === 'predicate' ? route().predicates : route().filte
 function open(key) {
     Workspace.select(key);
     selection = { kind: 'target', index: 0 };
-    test.path = null;
+    pathPending = true;
     render();
 }
 
@@ -218,63 +217,37 @@ function defaultPath(r) {
     return pattern.replace(/\/\*\*$/, '/42').replace(/\{\*?(\w+)(:[^}]*)?\}/g, '42').replace(/\*/g, 'x') || '/';
 }
 
+// Testeur de l'éditeur : même formulaire que la page « Testeur », résultat rendu par le serveur avec le même fragment
+const form = el('editor-test-form');
+form.addEventListener('submit', event => event.preventDefault());
+form.addEventListener('input', () => schedule());
+
+// Nouvelle route sélectionnée : chemin d'exemple déduit de ses prédicats, les autres champs sont conservés
 function renderTest() {
-    const box = el('live-test');
-    box.replaceChildren();
-    if (!route()) {
-        return;
+    el('live-test').hidden = !route();
+    if (route() && pathPending) {
+        form.elements.path.value = defaultPath(route());
+        pathPending = false;
     }
-    if (test.path === null) {
-        test.path = defaultPath(route());
-    }
-    const line = make('div', 'test-line');
-    const method = make('select');
-    method.setAttribute('aria-label', t('test.method'));
-    METHODS.forEach(name => method.append(new Option(name, name, false, name === test.method)));
-    method.addEventListener('change', () => { test.method = method.value; schedule(); });
-    const path = make('input', 'mono grow');
-    path.value = test.path;
-    path.setAttribute('aria-label', t('test.path'));
-    path.addEventListener('input', () => { test.path = path.value; schedule(); });
-    line.append(make('span', 'test-label', t('test.title')), method, path);
-    box.append(line, make('div', 'test-result'), make('ul', 'lint'));
 }
 
-function stepLine(step) {
-    if (step.pathBefore != null && step.pathAfter != null && step.pathBefore !== step.pathAfter) {
-        return `${step.filter} : ${step.pathBefore} → ${step.pathAfter}`;
-    }
-    return step.filter + (step.note ? ' : ' + step.note : '');
+function testRequest() {
+    const fields = form.elements;
+    return { method: fields.method.value, path: fields.path.value || '/', host: fields.host.value, headers: fields.headers.value,
+        remoteAddress: fields.remoteAddress.value, context: fields.context.checked };
 }
 
-function renderSimulation(view) {
-    const result = document.querySelector('#live-test .test-result');
-    if (!result) {
-        return;
-    }
-    result.replaceChildren();
-    if (view.error) {
-        result.append(make('p', 'test-error', '✘ ' + view.error));
-    } else if (!view.matched) {
-        result.append(make('p', 'test-ko', '✘ ' + t('test.noMatch', view.predicate || '')));
-        if (view.predicateError) {
-            result.append(make('p', 'test-step mono', view.predicateError));
-        }
+// Fragment HTML produit par le serveur (template du Testeur, textes échappés) : aucun script, compatible avec la CSP
+function renderResult(html) {
+    if (html === null) {
+        el('editor-test-result').replaceChildren(make('p', 'alert alert-error', t('error.api')));
     } else {
-        result.append(make('p', 'test-ok', '✔ ' + view.targetUrl));
-        view.steps.forEach(step => result.append(make('p', 'test-step mono sim-' + step.status.toLowerCase(), stepLine(step))));
-        const vars = Object.entries(view.variables || {});
-        if (vars.length) {
-            result.append(make('p', 'test-step mono', t('test.variables', vars.map(([k, v]) => k + '=' + v).join(', '))));
-        }
+        el('editor-test-result').innerHTML = html;
     }
 }
 
 function renderAdvice(advice) {
-    const list = document.querySelector('#live-test .lint');
-    if (list) {
-        list.replaceChildren(...advice.map(a => make('li', String(a.level).toUpperCase() === 'ERROR' ? 'lint-error' : 'lint-warn', a.message)));
-    }
+    el('advice').replaceChildren(...advice.map(a => make('li', String(a.level).toUpperCase() === 'ERROR' ? 'lint-error' : 'lint-warn', a.message)));
 }
 
 async function renderExport() {
@@ -308,13 +281,13 @@ async function evaluate() {
     if (!r) {
         return;
     }
-    const request = { method: test.method, path: test.path || '/' };
-    const [simulation, advice] = await Promise.all([
-        Api.simulate(r, request).catch(() => ({ error: t('error.api') })),
-        Api.advice(r, Workspace.others()).catch(() => [])
+    const others = Workspace.others();
+    const [result, advice] = await Promise.all([
+        Api.test(r, others, testRequest()).catch(() => null),
+        Api.advice(r, others).catch(() => [])
     ]);
     if (current === sequence) {
-        renderSimulation(simulation);
+        renderResult(result);
         renderAdvice(advice);
     }
 }

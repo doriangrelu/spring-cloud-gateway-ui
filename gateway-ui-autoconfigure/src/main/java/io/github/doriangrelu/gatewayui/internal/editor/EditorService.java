@@ -118,6 +118,22 @@ public class EditorService {
     }
 
     /**
+     * Teste une requête contre la route éditée, évaluée dans la configuration : avec les autres routes de l'espace de
+     * travail et les routes Java de la Gateway. Aucune route n'est ajoutée à la Gateway.
+     *
+     * @param route route éditée
+     * @param others autres routes de l'espace de travail, hors routes retirées
+     * @param request requête à tester, préalablement validée
+     * @return le résultat, ou l'erreur de construction d'une des routes
+     */
+    public Mono<EditedRouteSimulator.Outcome> simulate(final EditableRoute route, final List<EditableRoute> others,
+            final TestRequest request) {
+        return javaRoutes()
+                .flatMap(ids -> inspector.rawRoutes().filter(gatewayRoute -> ids.contains(gatewayRoute.getId())).collectList())
+                .flatMap(javaRoutes -> simulator.simulate(route, others, javaRoutes, request));
+    }
+
+    /**
      * Conseils sur la route éditée, dans le contexte des autres routes de l'espace de travail.
      *
      * @param request route éditée et autres routes
