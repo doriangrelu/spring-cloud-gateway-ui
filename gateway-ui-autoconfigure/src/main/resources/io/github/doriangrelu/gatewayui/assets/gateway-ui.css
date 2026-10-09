@@ -21,8 +21,9 @@
     color-scheme: light;
 }
 
+/* Thème sombre : celui du système en mode Auto, ou choisi dans l'UI (data-theme, posé par le serveur) */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
         --bg: #12151b;
         --surface: #1a1e26;
         --surface-2: #222733;
@@ -42,6 +43,27 @@
         --spring: #7cc34e;
         color-scheme: dark;
     }
+}
+
+:root[data-theme="dark"] {
+    --bg: #12151b;
+    --surface: #1a1e26;
+    --surface-2: #222733;
+    --border: #2e3442;
+    --text: #e4e7ee;
+    --muted: #98a1b3;
+    --accent: #6c9cf0;
+    --accent-soft: #1f2b44;
+    --ok: #4cc683;
+    --ok-soft: #173126;
+    --warn: #e6a640;
+    --warn-soft: #362a14;
+    --error: #f07470;
+    --error-soft: #3a1d1d;
+    --global: #b394f2;
+    --global-soft: #2a2140;
+    --spring: #7cc34e;
+    color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -93,10 +115,11 @@ h1.mono { font-size: 20px; }
 .nav-link:hover { background: var(--surface-2); text-decoration: none; }
 .nav-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
 
-.lang-switch { margin-left: auto; display: flex; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; }
-.lang-switch a { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
-.lang-switch a:hover { text-decoration: none; background: var(--surface-2); }
-.lang-switch a.active { background: var(--accent-soft); color: var(--accent); }
+.preferences { margin-left: auto; display: flex; gap: 8px; }
+.switch { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; }
+.switch a { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.switch a:hover { text-decoration: none; background: var(--surface-2); }
+.switch a.active { background: var(--accent-soft); color: var(--accent); }
 
 main { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
@@ -300,3 +323,9 @@ tr:last-child td { border-bottom: none; }
     .step .tag { grid-column: 2; grid-row: 1; }
     .grid-2 { grid-template-columns: 1fr; }
 }
+
+/* Icônes du sélecteur de thème, dessinées en CSS (aucune image, compatible avec la CSP) */
+.theme-icon { display: block; width: 12px; height: 12px; margin: 2px 0; border-radius: 50%; border: 1.5px solid currentColor; }
+.theme-icon-auto { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+.theme-icon-light { border-style: dotted; border-width: 2px; }
+.theme-icon-dark { background: currentColor; box-shadow: inset 3px -2px 0 0 var(--surface); border-color: transparent; }

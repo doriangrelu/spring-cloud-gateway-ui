@@ -8,7 +8,8 @@ Instructions pour les agents IA (Claude Code, Copilot, Codex, Cursor...) qui tra
 
 - **Stack** : Java 25, Spring Boot 4.0, Spring Cloud 2025.1 (Gateway 5.0), templates **JTE** précompilés, **htmx**.
 - **Publication** : `io.github.doriangrelu`, sur Maven Central.
-- **Langue** : code et identifiants en anglais ; Javadoc, commentaires, UI et documentation en **français**.
+- **Langue** : code et identifiants en anglais ; Javadoc, commentaires et documentation en **français** ; UI en français et en anglais (ADR 0009).
+- **Échanges avec le mainteneur : toujours en français**, y compris les comptes rendus, les résumés et les questions.
 
 ## Commandes
 

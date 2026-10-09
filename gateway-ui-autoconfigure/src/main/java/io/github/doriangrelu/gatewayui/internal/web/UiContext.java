@@ -27,15 +27,16 @@ import io.github.doriangrelu.gatewayui.internal.inspect.FilterStep;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
- * Données communes à toutes les pages : URL de l'UI, onglet actif, langue et messages traduits.
+ * Données communes à toutes les pages : URL de l'UI, onglet actif, langue, thème et messages traduits.
  *
  * @param basePath préfixe des URL de l'UI
  * @param page onglet actif ({@code routes}, {@code services}, {@code filters} ou {@code tester})
  * @param locale langue de la page
+ * @param theme thème choisi dans l'UI
  * @param messages messages de l'UI
- * @param requestUri URI de la page affichée, pour construire les liens du sélecteur de langue
+ * @param requestUri URI de la page affichée, pour construire les liens des sélecteurs de langue et de thème
  */
-public record UiContext(String basePath, String page, Locale locale, Messages messages, URI requestUri) {
+public record UiContext(String basePath, String page, Locale locale, UiTheme theme, Messages messages, URI requestUri) {
 
     /**
      * URL d'une page de l'UI.
@@ -123,9 +124,32 @@ public record UiContext(String basePath, String page, Locale locale, Messages me
      * @return l'URL relative de la page
      */
     public String languageUrl(final Locale language) {
+        return currentPageWith(UiLocaleResolver.PARAMETER, language.getLanguage());
+    }
+
+    /**
+     * Thèmes proposés par le sélecteur.
+     *
+     * @return les thèmes, dans l'ordre d'affichage
+     */
+    public List<UiTheme> themes() {
+        return List.of(UiTheme.values());
+    }
+
+    /**
+     * URL de la page courante dans un autre thème : mêmes paramètres, thème remplacé.
+     *
+     * @param target thème cible
+     * @return l'URL relative de la page
+     */
+    public String themeUrl(final UiTheme target) {
+        return currentPageWith(UiTheme.PARAMETER, target.code());
+    }
+
+    private String currentPageWith(final String parameter, final String value) {
         return UriComponentsBuilder.fromUri(requestUri)
                 .scheme(null).host(null).port(-1)
-                .replaceQueryParam(UiLocaleResolver.PARAMETER, language.getLanguage())
+                .replaceQueryParam(parameter, value)
                 // Les paramètres de la page sont déjà encodés (chemins du testeur) : ne pas les ré-encoder
                 .build(true)
                 .toUriString();

@@ -1,11 +1,12 @@
 @import io.github.doriangrelu.gatewayui.internal.web.UiContext
 @import gg.jte.Content
 @import java.util.Locale
+@import io.github.doriangrelu.gatewayui.internal.web.UiTheme
 @param UiContext ui
 @param String title
 @param Content content
 <!doctype html>
-<html lang="${ui.lang()}">
+<html lang="${ui.lang()}" data-theme="${ui.theme().attribute()}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -29,12 +30,20 @@
         <a class="${ui.navClass("filters")}" href="${ui.url("/filters")}">${ui.message("nav.filters")}</a>
         <a class="${ui.navClass("tester")}" href="${ui.url("/tester")}">${ui.message("nav.tester")}</a>
     </nav>
-    <nav class="lang-switch" aria-label="${ui.message("nav.language")}">
-        @for(Locale language : ui.languages())
-            <a href="${ui.languageUrl(language)}" hreflang="${language.getLanguage()}" lang="${language.getLanguage()}"
-               class="${language.equals(ui.locale()) ? "active" : null}" aria-current="${language.equals(ui.locale()) ? "true" : null}">${language.getLanguage().toUpperCase()}</a>
-        @endfor
-    </nav>
+    <div class="preferences">
+        <nav class="switch" aria-label="${ui.message("theme.label")}">
+            @for(UiTheme theme : ui.themes())
+                <a href="${ui.themeUrl(theme)}" title="${ui.message("theme." + theme.code())}" aria-label="${ui.message("theme." + theme.code())}"
+                   class="${theme == ui.theme() ? "active" : null}" aria-current="${theme == ui.theme() ? "true" : null}"><span class="${"theme-icon theme-icon-" + theme.code()}" aria-hidden="true"></span></a>
+            @endfor
+        </nav>
+        <nav class="switch" aria-label="${ui.message("nav.language")}">
+            @for(Locale language : ui.languages())
+                <a href="${ui.languageUrl(language)}" hreflang="${language.getLanguage()}" lang="${language.getLanguage()}"
+                   class="${language.equals(ui.locale()) ? "active" : null}" aria-current="${language.equals(ui.locale()) ? "true" : null}">${language.getLanguage().toUpperCase()}</a>
+            @endfor
+        </nav>
+    </div>
 </header>
 <main>
     ${content}

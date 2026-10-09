@@ -21,7 +21,7 @@ import io.github.doriangrelu.gatewayui.internal.i18n.Messages;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
 /**
- * Construit le {@link UiContext} de chaque requête : chemin de l'UI, onglet, et langue choisie pour l'utilisateur.
+ * Construit le {@link UiContext} de chaque requête : chemin de l'UI, onglet, langue et thème choisis par l'utilisateur.
  */
 public class UiContexts {
 
@@ -46,12 +46,13 @@ public class UiContexts {
     /**
      * Contexte d'une page.
      *
-     * @param request requête HTTP ; un changement de langue demandé par le sélecteur y est mémorisé
+     * @param request requête HTTP ; un changement de langue ou de thème demandé par un sélecteur y est mémorisé
      * @param page onglet actif
      * @return le contexte de rendu
      */
     public UiContext create(final ServerRequest request, final String page) {
-        return new UiContext(basePath, page, localeResolver.resolve(request), messages, request.uri());
+        return new UiContext(basePath, page, localeResolver.resolve(request), UiTheme.resolve(request, basePath), messages,
+                request.uri());
     }
 
     /**

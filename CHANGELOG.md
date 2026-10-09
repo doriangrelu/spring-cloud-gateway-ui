@@ -9,12 +9,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 ### Ajouté
 
 - UI disponible en anglais et en français ([ADR 0009](docs/adr/0009-internationalisation.md)) : langue du navigateur par défaut, sélecteur **EN | FR** dans la barre de navigation (choix mémorisé), et nouvelle propriété `gateway.ui.default-locale` (`en` par défaut).
+- Sélecteur de thème Auto / Clair / Sombre dans la barre de navigation, sans JavaScript : le choix est mémorisé et appliqué par le serveur, sans changement visible au chargement.
 - Avertissement au démarrage si l'UI est activée sans Spring Security sur le classpath, et guide de protection dans le README : activation par profil, rôle Spring Security, connexion OAuth2 avec Keycloak ([ADR 0010](docs/adr/0010-securiser-l-acces-a-l-ui.md)).
 
 ### Modifié
 
 - L'UI s'affiche désormais en anglais par défaut, sauf si le navigateur demande le français.
-
 - API publique définie et politique de compatibilité documentée ([ADR 0008](docs/adr/0008-api-publique-et-compatibilite.md)) : l'implémentation passe dans les paquets `io.github.doriangrelu.gatewayui.internal.*`, sans garantie de compatibilité, et les beans de l'UI ne sont plus remplaçables (`@ConditionalOnMissingBean` retiré).
 
 ### Sécurité

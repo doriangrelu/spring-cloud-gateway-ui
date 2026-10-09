@@ -15,14 +15,11 @@
  */
 package io.github.doriangrelu.gatewayui.internal.web;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
 import io.github.doriangrelu.gatewayui.internal.i18n.Messages;
-import org.springframework.http.HttpCookie;
-import org.springframework.http.ResponseCookie;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
 /**
@@ -36,8 +33,6 @@ public class UiLocaleResolver {
 
     /** Cookie qui mémorise la langue choisie dans l'UI. */
     static final String COOKIE = "gateway-ui-lang";
-
-    private static final Duration COOKIE_DURATION = Duration.ofDays(365);
 
     private final Locale defaultLocale;
 
@@ -67,8 +62,7 @@ public class UiLocaleResolver {
     }
 
     private static Optional<Locale> fromCookie(final ServerRequest request) {
-        final HttpCookie cookie = request.cookies().getFirst(COOKIE);
-        return cookie == null ? Optional.empty() : Messages.supported(Locale.forLanguageTag(cookie.getValue()));
+        return PreferenceCookies.read(request, COOKIE).map(Locale::forLanguageTag).flatMap(Messages::supported);
     }
 
     private static Optional<Locale> fromBrowser(final ServerRequest request) {
@@ -83,11 +77,6 @@ public class UiLocaleResolver {
     }
 
     private void remember(final ServerRequest request, final Locale locale) {
-        request.exchange().getResponse().addCookie(ResponseCookie.from(COOKIE, locale.getLanguage())
-                .path(cookiePath)
-                .maxAge(COOKIE_DURATION)
-                .httpOnly(true)
-                .sameSite("Lax")
-                .build());
+        PreferenceCookies.remember(request, COOKIE, locale.getLanguage(), cookiePath);
     }
 }

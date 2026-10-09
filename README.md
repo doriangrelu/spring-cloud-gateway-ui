@@ -64,7 +64,7 @@ Requête entrante → prédicats → **toute la chaîne de filtres**, globaux et
 </picture>
 </details>
 
-Toutes ces captures ont été prises sur la [Gateway d'exemple](gateway-ui-sample). L'UI suit le thème clair ou sombre du système, et existe en anglais et en français : elle s'affiche dans la langue du navigateur, et le sélecteur **EN | FR** de la barre de navigation permet d'en changer.
+Toutes ces captures ont été prises sur la [Gateway d'exemple](gateway-ui-sample). L'UI existe en anglais et en français, en thème clair et sombre. Par défaut, elle suit la langue du navigateur et le thème du système ; les sélecteurs de la barre de navigation (thème Auto / Clair / Sombre, langue **EN | FR**) permettent d'en changer, et le choix est mémorisé.
 
 ## Démarrage rapide
 

@@ -174,6 +174,32 @@ class GatewayUiIntegrationTest {
     }
 
     @Test
+    void themeFollowsTheSystemByDefault() {
+        client.get().uri("/gateway-ui/routes").exchange()
+                .expectBody(String.class).value(body -> assertThat(body)
+                        .contains("<html lang=\"en\">")
+                        .doesNotContain("data-theme="));
+    }
+
+    @Test
+    void themeCanBeChangedFromTheUiAndIsRemembered() {
+        client.get().uri("/gateway-ui/services?theme=dark").exchange()
+                .expectHeader().valueMatches(HttpHeaders.SET_COOKIE, "gateway-ui-theme=dark;.*Path=/gateway-ui.*")
+                .expectBody(String.class).value(body -> assertThat(body)
+                        .contains("data-theme=\"dark\"")
+                        .contains("href=\"/gateway-ui/services?theme=light\""));
+        client.get().uri("/gateway-ui/routes").cookie("gateway-ui-theme", "light").exchange()
+                .expectBody(String.class).value(body -> assertThat(body).contains("data-theme=\"light\""));
+    }
+
+    @Test
+    void unknownThemeIsIgnored() {
+        client.get().uri("/gateway-ui/routes?theme=pink").exchange()
+                .expectHeader().doesNotExist(HttpHeaders.SET_COOKIE)
+                .expectBody(String.class).value(body -> assertThat(body).doesNotContain("data-theme="));
+    }
+
+    @Test
     void gatewayRoutesDoNotCarryUiSecurityHeaders() {
         client.get().uri("/no-op").exchange()
                 .expectStatus().isNoContent()
