@@ -100,6 +100,19 @@ public record UiContext(String basePath, String page, Locale locale, UiTheme the
     }
 
     /**
+     * Clés des messages qui commencent par un préfixe, triées : la page de l'éditeur les fournit à ses scripts.
+     *
+     * @param prefix préfixe des clés
+     * @return les clés
+     */
+    public List<String> messageKeys(final String prefix) {
+        return messages.keys(Messages.supported(locale).orElse(Locale.ENGLISH)).stream()
+                .filter(key -> key.startsWith(prefix))
+                .sorted()
+                .toList();
+    }
+
+    /**
      * Code de la langue de la page, pour l'attribut {@code lang} du document.
      *
      * @return le code ISO de la langue ({@code en}, {@code fr})

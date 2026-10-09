@@ -212,6 +212,31 @@ class GatewayUiIntegrationTest {
     }
 
     @Test
+    void editorPageProvidesTheApiAndTheScriptMessages() {
+        client.get().uri("/gateway-ui/editor").exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> assertThat(body)
+                        .contains("href=\"/gateway-ui/editor\"")
+                        .contains("data-api=\"/gateway-ui/api/editor\"")
+                        .contains("<script type=\"module\" src=\"/gateway-ui/assets/editor/main.js\"></script>")
+                        .contains("<span data-key=\"status.new\">new</span>")
+                        .doesNotContain("data-csrf-header"));
+        client.get().uri("/gateway-ui/editor").header(HttpHeaders.ACCEPT_LANGUAGE, "fr").exchange()
+                .expectBody(String.class).value(body -> assertThat(body)
+                        .contains("Éditeur de routes")
+                        .contains("<span data-key=\"status.new\">nouvelle</span>"));
+    }
+
+    @Test
+    void editorScriptsAreServedByTheUi() {
+        for (final String script : new String[] {"main", "editor", "api", "i18n", "model", "workspace", "palette", "canvas"}) {
+            client.get().uri("/gateway-ui/assets/editor/" + script + ".js").exchange()
+                    .expectStatus().isOk()
+                    .expectHeader().contentTypeCompatibleWith("text/javascript");
+        }
+    }
+
+    @Test
     void editorApiReadsDeclaredRoutesAsEditableRoutes() {
         client.get().uri("/gateway-ui/api/editor/routes").exchange()
                 .expectStatus().isOk()

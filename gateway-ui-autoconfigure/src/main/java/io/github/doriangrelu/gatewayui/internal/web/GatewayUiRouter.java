@@ -83,6 +83,7 @@ public class GatewayUiRouter {
                 .GET(basePath + "/services", handler::services)
                 .GET(basePath + "/filters", handler::globalFilters)
                 .GET(basePath + "/tester", handler::tester)
+                .GET(basePath + "/editor", handler::editor)
                 .build();
     }
 

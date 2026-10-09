@@ -6,6 +6,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 
 ## [Unreleased]
 
+### Ajouté
+
+- Éditeur graphique de routes, page **Éditeur** (`{base-path}/editor`) ([ADR 0011](docs/adr/0011-technique-de-l-editeur.md), [ADR 0012](docs/adr/0012-modele-d-edition-et-export.md)) : modification des routes existantes et création de nouvelles sur un canevas, palette de recherche des prédicats et filtres au clavier, test en direct de la route éditée construite par la Gateway elle-même (filtres par défaut compris), export YAML (route courante, configuration complète ou modifications seulement) avec les placeholders `${...}` d'origine. Le travail reste dans le navigateur : la Gateway n'est jamais modifiée. Compatible avec la protection CSRF de Spring Security.
+
 ## [1.0.0] - 2026-10-09
 
 Première version stable : l'API publique est définie et suit le versionnage sémantique ([ADR 0008](docs/adr/0008-api-publique-et-compatibilite.md)).

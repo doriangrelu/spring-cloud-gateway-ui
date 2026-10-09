@@ -152,6 +152,18 @@ public class GatewayUiHandler {
         });
     }
 
+    /**
+     * Éditeur graphique de routes (ADR 0011) : la page fournit la structure, les textes traduits et le jeton CSRF ; les
+     * interactions sont assurées par ses scripts, branchés sur l'API de l'éditeur.
+     *
+     * @param request requête HTTP
+     * @return la page
+     */
+    public Mono<ServerResponse> editor(final ServerRequest request) {
+        final UiContext page = contexts.create(request, "editor");
+        return CsrfToken.of(request).flatMap(csrf -> html("editor", Map.of("ui", page, "csrf", csrf)));
+    }
+
     private static Map<String, Object> testerParams(final UiContext page, final TestRequest testRequest) {
         // HashMap : les templates attendent des paramètres présents, même nuls
         final Map<String, Object> params = new HashMap<>();

@@ -29,6 +29,7 @@
         <a class="${ui.navClass("services")}" href="${ui.url("/services")}">${ui.message("nav.services")}</a>
         <a class="${ui.navClass("filters")}" href="${ui.url("/filters")}">${ui.message("nav.filters")}</a>
         <a class="${ui.navClass("tester")}" href="${ui.url("/tester")}">${ui.message("nav.tester")}</a>
+        <a class="${ui.navClass("editor")}" href="${ui.url("/editor")}">${ui.message("nav.editor")}</a>
     </nav>
     <div class="preferences">
         <nav class="switch" aria-label="${ui.message("theme.label")}">
