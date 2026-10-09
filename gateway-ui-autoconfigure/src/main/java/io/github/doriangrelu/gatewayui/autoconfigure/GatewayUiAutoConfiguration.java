@@ -20,6 +20,7 @@ import java.util.Map;
 
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService;
 import io.github.doriangrelu.gatewayui.internal.editor.FactoryCatalog;
+import io.github.doriangrelu.gatewayui.internal.editor.RawRouteConfiguration;
 import io.github.doriangrelu.gatewayui.internal.inspect.GatewayInspector;
 import io.github.doriangrelu.gatewayui.internal.inspect.ServiceCatalog;
 import io.github.doriangrelu.gatewayui.internal.tester.RouteTester;
@@ -46,6 +47,7 @@ import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
@@ -115,11 +117,13 @@ public class GatewayUiAutoConfiguration {
      *
      * @param inspector inspecteur de la Gateway
      * @param factoryCatalog fabriques de la Gateway
+     * @param environment environnement, pour les valeurs brutes de la configuration des routes
      * @return le service de l'éditeur
      */
     @Bean
-    public EditorService gatewayUiEditorService(final GatewayInspector inspector, final FactoryCatalog factoryCatalog) {
-        return new EditorService(inspector, factoryCatalog);
+    public EditorService gatewayUiEditorService(final GatewayInspector inspector, final FactoryCatalog factoryCatalog,
+            final ConfigurableEnvironment environment) {
+        return new EditorService(inspector, factoryCatalog, RawRouteConfiguration.of(environment));
     }
 
     /**

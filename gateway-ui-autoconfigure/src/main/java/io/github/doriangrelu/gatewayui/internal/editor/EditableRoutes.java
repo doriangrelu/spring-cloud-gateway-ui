@@ -58,6 +58,67 @@ public class EditableRoutes {
                 steps(definition.getFilters().stream().map(f -> Map.entry(f.getName(), f.getArgs())).toList(), catalog::filter));
     }
 
+    /**
+     * Route éditable correspondant à une définition, avec les placeholders d'origine rétablis (ADR 0012).
+     *
+     * <p>Une valeur n'est remplacée par sa valeur brute que si celle-ci contient un placeholder : les autres valeurs
+     * sont identiques. Une route absente de la configuration (Java, API d'actuator) garde ses valeurs résolues.
+     *
+     * @param definition définition de la Gateway
+     * @param raw valeurs brutes de la configuration
+     * @return la route éditable
+     */
+    public EditableRoute of(final RouteDefinition definition, final RawRouteConfiguration raw) {
+        final EditableRoute resolved = of(definition);
+        return raw.routePrefix(definition.getId()).map(prefix -> restore(resolved, definition, prefix, raw)).orElse(resolved);
+    }
+
+    private EditableRoute restore(final EditableRoute resolved, final RouteDefinition definition, final String prefix,
+            final RawRouteConfiguration raw) {
+        final String uri = raw.raw(prefix + ".uri").filter(EditableRoutes::hasPlaceholder).orElse(resolved.uri());
+        final List<EditableStep> predicates = restore(resolved.predicates(),
+                definition.getPredicates().stream().map(p -> p.getArgs()).toList(), prefix + ".predicates", true, raw);
+        final List<EditableStep> filters = restore(resolved.filters(),
+                definition.getFilters().stream().map(f -> f.getArgs()).toList(), prefix + ".filters", false, raw);
+        return new EditableRoute(resolved.id(), uri, resolved.order(), predicates, filters);
+    }
+
+    private List<EditableStep> restore(final List<EditableStep> steps, final List<Map<String, String>> resolvedArgs,
+            final String prefix, final boolean predicate, final RawRouteConfiguration raw) {
+        final List<EditableStep> restored = new ArrayList<>();
+        for (int i = 0; i < steps.size(); i++) {
+            final EditableStep step = steps.get(i);
+            final FactoryDescriptor factory = predicate ? catalog.predicate(step.name()) : catalog.filter(step.name());
+            final EditableStep original = rawStep(step.name(), prefix + "[" + i + "]", predicate, resolvedArgs.get(i), raw, factory);
+            restored.add(withPlaceholders(step, original));
+        }
+        return restored;
+    }
+
+    private static EditableStep rawStep(final String name, final String prefix, final boolean predicate,
+            final Map<String, String> resolvedArgs, final RawRouteConfiguration raw, final FactoryDescriptor factory) {
+        try {
+            return step(name, raw.args(prefix, predicate, resolvedArgs), factory);
+        }
+        catch (final RuntimeException ex) {
+            // Forme raccourcie illisible : on garde les valeurs résolues
+            return new EditableStep(name, Map.of());
+        }
+    }
+
+    private static EditableStep withPlaceholders(final EditableStep resolved, final EditableStep raw) {
+        final Map<String, String> values = new LinkedHashMap<>(resolved.values());
+        values.replaceAll((field, value) -> {
+            final String original = raw.values().get(field);
+            return original != null && hasPlaceholder(original) ? original : value;
+        });
+        return new EditableStep(resolved.name(), values);
+    }
+
+    private static boolean hasPlaceholder(final String value) {
+        return value.contains("${");
+    }
+
     private static List<EditableStep> steps(final List<Map.Entry<String, Map<String, String>>> declared,
             final Function<String, FactoryDescriptor> factories) {
         return declared.stream().map(d -> step(d.getKey(), d.getValue(), factories.apply(d.getKey()))).toList();

@@ -36,21 +36,26 @@ public class EditorService {
 
     private final RouteYaml yaml;
 
+    private final RawRouteConfiguration rawConfiguration;
+
     /**
      * Crée le service.
      *
      * @param inspector inspecteur de la Gateway
      * @param catalog fabriques de la Gateway
+     * @param rawConfiguration valeurs brutes de la configuration, pour rétablir les placeholders
      */
-    public EditorService(final GatewayInspector inspector, final FactoryCatalog catalog) {
+    public EditorService(final GatewayInspector inspector, final FactoryCatalog catalog,
+            final RawRouteConfiguration rawConfiguration) {
         this.inspector = inspector;
         this.catalog = catalog;
         this.editableRoutes = new EditableRoutes(catalog);
         this.yaml = new RouteYaml(catalog);
+        this.rawConfiguration = rawConfiguration;
     }
 
     /**
-     * Routes déclarées de la Gateway, éditables, dans l'ordre d'évaluation.
+     * Routes déclarées de la Gateway, éditables, dans l'ordre d'évaluation, avec leurs placeholders d'origine.
      *
      * @return les routes éditables
      */
@@ -59,7 +64,7 @@ public class EditorService {
                 .map(tuple -> tuple.getT1().stream()
                         .map(tuple.getT2()::get)
                         .filter(Objects::nonNull)
-                        .map(editableRoutes::of)
+                        .map(definition -> editableRoutes.of(definition, rawConfiguration))
                         .toList());
     }
 

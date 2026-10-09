@@ -37,7 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         "gateway.ui.services.billing.url=http://billing.test:8080",
         "gateway.ui.services.billing.display-name=Facturation",
         "spring.cloud.gateway.server.webflux.routes[0].id=orders",
-        "spring.cloud.gateway.server.webflux.routes[0].uri=http://orders.test:8080",
+        "orders.url=http://orders.test:8080",
+        "spring.cloud.gateway.server.webflux.routes[0].uri=${orders.url}",
         "spring.cloud.gateway.server.webflux.routes[0].predicates[0]=Path=/api/orders/**",
         "spring.cloud.gateway.server.webflux.routes[0].filters[0]=StripPrefix=1",
         "spring.cloud.gateway.server.webflux.routes[1].id=users",
@@ -54,6 +55,14 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.cloud.gateway.server.webflux.routes[3].uri=no://op",
         "spring.cloud.gateway.server.webflux.routes[3].predicates[0]=Path=/no-op",
         "spring.cloud.gateway.server.webflux.routes[3].filters[0]=SetStatus=204",
+        // Placeholders dans les arguments, en forme raccourcie et développée : l'éditeur doit les rétablir
+        "spring.cloud.gateway.server.webflux.routes[4].id=secured",
+        "spring.cloud.gateway.server.webflux.routes[4].uri=http://secured.test:8080",
+        "spring.cloud.gateway.server.webflux.routes[4].predicates[0]=Path=/secured/**",
+        "spring.cloud.gateway.server.webflux.routes[4].filters[0]=AddRequestHeader=Authorization, Bearer ${api.token:dev-token}",
+        "spring.cloud.gateway.server.webflux.routes[4].filters[1].name=SetRequestHeader",
+        "spring.cloud.gateway.server.webflux.routes[4].filters[1].args.name=X-Env",
+        "spring.cloud.gateway.server.webflux.routes[4].filters[1].args.value=${env.name:dev}",
 })
 class GatewayUiIntegrationTest {
 
@@ -212,6 +221,17 @@ class GatewayUiIntegrationTest {
                 .jsonPath("$[1].filters[0].name").isEqualTo("SetPath")
                 .jsonPath("$[1].filters[0].values.template").isEqualTo("/v2/users/{id}")
                 .jsonPath("$[?(@.id == 'catch-all')].order").isEqualTo(List.of(100));
+    }
+
+    @Test
+    void editorApiRestoresPlaceholdersOfTheConfiguration() {
+        client.get().uri("/gateway-ui/api/editor/routes").exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[?(@.id == 'orders')].uri").isEqualTo(List.of("${orders.url}"))
+                .jsonPath("$[?(@.id == 'secured')].filters[0].values.value").isEqualTo(List.of("Bearer ${api.token:dev-token}"))
+                .jsonPath("$[?(@.id == 'secured')].filters[1].values.value").isEqualTo(List.of("${env.name:dev}"))
+                .jsonPath("$[?(@.id == 'secured')].filters[1].values.name").isEqualTo(List.of("X-Env"));
     }
 
     @Test
