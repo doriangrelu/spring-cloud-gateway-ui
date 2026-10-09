@@ -25,7 +25,7 @@ import reactor.core.publisher.Mono;
 
 /**
  * Point d'entrée de l'éditeur côté serveur (ADR 0011) : ce que la Gateway sait des routes et des fabriques, et la
- * génération du YAML. L'éditeur ne modifie jamais la Gateway.
+ * génération du YAML, les conseils et la simulation. L'éditeur ne modifie jamais la Gateway.
  */
 public class EditorService {
 
@@ -41,6 +41,8 @@ public class EditorService {
 
     private final EditedRouteSimulator simulator;
 
+    private final RouteAdvisor advisor;
+
     /**
      * Crée le service.
      *
@@ -48,15 +50,17 @@ public class EditorService {
      * @param catalog fabriques de la Gateway
      * @param rawConfiguration valeurs brutes de la configuration, pour rétablir les placeholders
      * @param simulator simulation de la route éditée
+     * @param advisor conseils sur la route éditée
      */
     public EditorService(final GatewayInspector inspector, final FactoryCatalog catalog,
-            final RawRouteConfiguration rawConfiguration, final EditedRouteSimulator simulator) {
+            final RawRouteConfiguration rawConfiguration, final EditedRouteSimulator simulator, final RouteAdvisor advisor) {
         this.inspector = inspector;
         this.catalog = catalog;
         this.editableRoutes = new EditableRoutes(catalog);
         this.yaml = new RouteYaml(catalog);
         this.rawConfiguration = rawConfiguration;
         this.simulator = simulator;
+        this.advisor = advisor;
     }
 
     /**
@@ -113,6 +117,16 @@ public class EditorService {
         return simulator.simulate(route, request);
     }
 
+    /**
+     * Conseils sur la route éditée, dans le contexte des autres routes de l'espace de travail.
+     *
+     * @param request route éditée et autres routes
+     * @return les conseils
+     */
+    public List<Advice> advise(final AdviceRequest request) {
+        return advisor.advise(request.route(), request.routes());
+    }
+
     private Mono<List<String>> routeIds() {
         return inspector.rawRoutes().map(Route::getId).collectList();
     }
@@ -140,6 +154,23 @@ public class EditorService {
         public YamlRequest {
             routes = routes == null ? List.of() : List.copyOf(routes);
             comments = comments == null ? List.of() : List.copyOf(comments);
+        }
+    }
+
+    /**
+     * Demande de conseils sur la route éditée.
+     *
+     * @param route route éditée
+     * @param routes autres routes de l'espace de travail, sans la route éditée
+     */
+    public record AdviceRequest(EditableRoute route, List<EditableRoute> routes) {
+
+        /**
+         * Remplace la route et la liste absentes par une route et une liste vides.
+         */
+        public AdviceRequest {
+            route = route == null ? new EditableRoute(null, null, 0, null, null) : route;
+            routes = routes == null ? List.of() : List.copyOf(routes);
         }
     }
 }

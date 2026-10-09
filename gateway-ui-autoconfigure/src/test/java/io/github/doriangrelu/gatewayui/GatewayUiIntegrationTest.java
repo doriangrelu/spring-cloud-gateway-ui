@@ -16,67 +16,14 @@
 package io.github.doriangrelu.gatewayui;
 
 import java.net.URI;
-import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(properties = {
-        "gateway.ui.enabled=true",
-        "gateway.ui.services.billing.url=http://billing.test:8080",
-        "gateway.ui.services.billing.display-name=Facturation",
-        "spring.cloud.gateway.server.webflux.routes[0].id=orders",
-        "orders.url=http://orders.test:8080",
-        "spring.cloud.gateway.server.webflux.routes[0].uri=${orders.url}",
-        "spring.cloud.gateway.server.webflux.routes[0].predicates[0]=Path=/api/orders/**",
-        "spring.cloud.gateway.server.webflux.routes[0].filters[0]=StripPrefix=1",
-        "spring.cloud.gateway.server.webflux.routes[1].id=users",
-        "spring.cloud.gateway.server.webflux.routes[1].uri=http://users.test:8080",
-        "spring.cloud.gateway.server.webflux.routes[1].predicates[0]=Path=/api/users/{id}",
-        "spring.cloud.gateway.server.webflux.routes[1].filters[0]=SetPath=/v2/users/{id}",
-        // Route attrape-tout : ne doit masquer ni les pages ni les ressources de l'UI
-        "spring.cloud.gateway.server.webflux.routes[2].id=catch-all",
-        "spring.cloud.gateway.server.webflux.routes[2].uri=http://fallback.test:8080",
-        "spring.cloud.gateway.server.webflux.routes[2].order=100",
-        "spring.cloud.gateway.server.webflux.routes[2].predicates[0]=Path=/**",
-        // Route qui répond sans appel réseau : ses réponses ne doivent pas porter les en-têtes de l'UI
-        "spring.cloud.gateway.server.webflux.routes[3].id=no-op",
-        "spring.cloud.gateway.server.webflux.routes[3].uri=no://op",
-        "spring.cloud.gateway.server.webflux.routes[3].predicates[0]=Path=/no-op",
-        "spring.cloud.gateway.server.webflux.routes[3].filters[0]=SetStatus=204",
-        // Placeholders dans les arguments, en forme raccourcie et développée : l'éditeur doit les rétablir
-        "spring.cloud.gateway.server.webflux.routes[4].id=secured",
-        "spring.cloud.gateway.server.webflux.routes[4].uri=http://secured.test:8080",
-        "spring.cloud.gateway.server.webflux.routes[4].predicates[0]=Path=/secured/**",
-        "spring.cloud.gateway.server.webflux.routes[4].filters[0]=AddRequestHeader=Authorization, Bearer ${api.token:dev-token}",
-        "spring.cloud.gateway.server.webflux.routes[4].filters[1].name=SetRequestHeader",
-        "spring.cloud.gateway.server.webflux.routes[4].filters[1].args.name=X-Env",
-        "spring.cloud.gateway.server.webflux.routes[4].filters[1].args.value=${env.name:dev}",
-        // Filtre par défaut : la simulation de la route éditée doit le rejouer
-        "spring.cloud.gateway.server.webflux.default-filters[0]=AddRequestHeader=X-Gateway, ui",
-})
-class GatewayUiIntegrationTest {
-
-    @Autowired
-    private ApplicationContext context;
-
-    private WebTestClient client;
-
-    @BeforeEach
-    void setUp() {
-        client = WebTestClient.bindToApplicationContext(context).build();
-    }
+class GatewayUiIntegrationTest extends GatewayUiIntegrationTestSupport {
 
     @Test
     void listsRoutesInEvaluationOrder() {
@@ -212,154 +159,10 @@ class GatewayUiIntegrationTest {
     }
 
     @Test
-    void editorPageProvidesTheApiAndTheScriptMessages() {
-        client.get().uri("/gateway-ui/editor").exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class).value(body -> assertThat(body)
-                        .contains("href=\"/gateway-ui/editor\"")
-                        .contains("data-api=\"/gateway-ui/api/editor\"")
-                        .contains("<script type=\"module\" src=\"/gateway-ui/assets/editor/main.js\"></script>")
-                        .contains("<span data-key=\"status.new\">new</span>")
-                        .doesNotContain("data-csrf-header"));
-        client.get().uri("/gateway-ui/editor").header(HttpHeaders.ACCEPT_LANGUAGE, "fr").exchange()
-                .expectBody(String.class).value(body -> assertThat(body)
-                        .contains("Éditeur de routes")
-                        .contains("<span data-key=\"status.new\">nouvelle</span>"));
-    }
-
-    @Test
-    void editorScriptsAreServedByTheUi() {
-        for (final String script : new String[] {"main", "editor", "api", "i18n", "model", "workspace", "palette", "canvas"}) {
-            client.get().uri("/gateway-ui/assets/editor/" + script + ".js").exchange()
-                    .expectStatus().isOk()
-                    .expectHeader().contentTypeCompatibleWith("text/javascript");
-        }
-    }
-
-    @Test
-    void editorApiReadsDeclaredRoutesAsEditableRoutes() {
-        client.get().uri("/gateway-ui/api/editor/routes").exchange()
-                .expectStatus().isOk()
-                .expectHeader().exists("Content-Security-Policy")
-                .expectBody()
-                .jsonPath("$[0].id").isEqualTo("orders")
-                .jsonPath("$[0].predicates[0].values.patterns").isEqualTo("/api/orders/**")
-                .jsonPath("$[0].filters[0].values.parts").isEqualTo("1")
-                .jsonPath("$[1].filters[0].name").isEqualTo("SetPath")
-                .jsonPath("$[1].filters[0].values.template").isEqualTo("/v2/users/{id}")
-                .jsonPath("$[?(@.id == 'catch-all')].order").isEqualTo(List.of(100));
-    }
-
-    @Test
-    void editorApiRestoresPlaceholdersOfTheConfiguration() {
-        client.get().uri("/gateway-ui/api/editor/routes").exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$[?(@.id == 'orders')].uri").isEqualTo(List.of("${orders.url}"))
-                .jsonPath("$[?(@.id == 'secured')].filters[0].values.value").isEqualTo(List.of("Bearer ${api.token:dev-token}"))
-                .jsonPath("$[?(@.id == 'secured')].filters[1].values.value").isEqualTo(List.of("${env.name:dev}"))
-                .jsonPath("$[?(@.id == 'secured')].filters[1].values.name").isEqualTo(List.of("X-Env"));
-    }
-
-    @Test
-    void editorApiListsFactoriesAndJavaRoutes() {
-        client.get().uri("/gateway-ui/api/editor/factories").exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.filters[?(@.name == 'StripPrefix')].fields[0]").isEqualTo(List.of("parts"))
-                .jsonPath("$.predicates[?(@.name == 'Path')].shortcutType").isEqualTo(List.of("GATHER_LIST_TAIL_FLAG"));
-        client.get().uri("/gateway-ui/api/editor/java-routes").exchange()
-                .expectStatus().isOk()
-                .expectBody().json("[]");
-    }
-
-    @Test
-    void editorApiGeneratesYaml() {
-        client.post().uri("/gateway-ui/api/editor/yaml")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("""
-                        {"comments": ["Export"],
-                         "routes": [{"id": "orders", "uri": "http://orders:8080", "order": 0,
-                                     "predicates": [{"name": "Path", "values": {"patterns": "/api/orders/**"}}],
-                                     "filters": [{"name": "StripPrefix", "values": {"parts": "1"}}]}]}
-                        """)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class).value(body -> assertThat(body)
-                        .startsWith("# Export\nspring:")
-                        .contains("- Path=/api/orders/**")
-                        .contains("- StripPrefix=1"));
-    }
-
-    @Test
-    void editorApiSimulatesTheEditedRouteWithTheGatewayFactories() {
-        simulate("""
-                {"route": {"id": "", "uri": "${orders.url}", "order": 0,
-                           "predicates": [{"name": "Path", "values": {"patterns": "/shop/{id}"}}],
-                           "filters": [{"name": "SetPath", "values": {"template": "/v3/items/{id}"}}]},
-                 "method": "GET", "path": "/shop/5"}
-                """, "en")
-                .jsonPath("$.error").doesNotExist()
-                .jsonPath("$.matched").isEqualTo(true)
-                .jsonPath("$.targetUrl").isEqualTo("http://orders.test:8080/v3/items/5")
-                .jsonPath("$.variables.id").isEqualTo("5")
-                .jsonPath("$.steps[?(@.filter == 'AddRequestHeader')].note").isNotEmpty()
-                .jsonPath("$.steps[?(@.filter == 'SetPath')].pathAfter").isEqualTo(List.of("/v3/items/5"));
-    }
-
-    @Test
-    void editorApiReportsAnEditedRouteThatDoesNotMatch() {
-        simulate("""
-                {"route": {"id": "draft", "uri": "http://draft.test", "order": 0,
-                           "predicates": [{"name": "Path", "values": {"patterns": "/draft/**"}}], "filters": []},
-                 "method": "GET", "path": "/other"}
-                """, "en")
-                .jsonPath("$.error").doesNotExist()
-                .jsonPath("$.matched").isEqualTo(false)
-                .jsonPath("$.predicate").isEqualTo("Path=/draft/**");
-    }
-
-    @Test
-    void editorApiReportsAnInvalidEditedRouteInTheUserLanguage() {
-        simulate("""
-                {"route": {"id": "draft", "uri": "http://draft.test", "order": 0,
-                           "predicates": [{"name": "Path", "values": {"patterns": "/draft/**"}}],
-                           "filters": [{"name": "Nope", "values": {}}]},
-                 "method": "GET", "path": "/draft/1"}
-                """, "fr")
-                .jsonPath("$.matched").isEqualTo(false)
-                .jsonPath("$.error").value(error -> assertThat((String) error).startsWith("Route invalide : ").contains("Nope"));
-    }
-
-    @Test
-    void editorApiValidatesTheTestedRequest() {
-        simulate("""
-                {"route": {"id": "draft", "uri": "http://draft.test", "order": 0, "predicates": [], "filters": []},
-                 "method": "FETCH IT", "path": "/draft"}
-                """, "en")
-                .jsonPath("$.error").value(error -> assertThat((String) error).contains("FETCH IT"));
-    }
-
-    private WebTestClient.BodyContentSpec simulate(final String body, final String language) {
-        return client.post().uri("/gateway-ui/api/editor/simulate")
-                .header(HttpHeaders.ACCEPT_LANGUAGE, language)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody();
-    }
-
-    @Test
     void gatewayRoutesDoNotCarryUiSecurityHeaders() {
         client.get().uri("/no-op").exchange()
                 .expectStatus().isNoContent()
                 .expectHeader().doesNotExist("Content-Security-Policy")
                 .expectHeader().doesNotExist("X-Frame-Options");
-    }
-
-    @SpringBootConfiguration
-    @EnableAutoConfiguration
-    static class TestGateway {
     }
 }

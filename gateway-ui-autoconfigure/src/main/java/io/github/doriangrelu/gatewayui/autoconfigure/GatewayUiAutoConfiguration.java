@@ -23,6 +23,7 @@ import io.github.doriangrelu.gatewayui.internal.editor.EditedRouteSimulator.Rout
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService;
 import io.github.doriangrelu.gatewayui.internal.editor.FactoryCatalog;
 import io.github.doriangrelu.gatewayui.internal.editor.RawRouteConfiguration;
+import io.github.doriangrelu.gatewayui.internal.editor.RouteAdvisor;
 import io.github.doriangrelu.gatewayui.internal.inspect.GatewayInspector;
 import io.github.doriangrelu.gatewayui.internal.inspect.ServiceCatalog;
 import io.github.doriangrelu.gatewayui.internal.tester.RouteTester;
@@ -120,14 +121,15 @@ public class GatewayUiAutoConfiguration {
      *
      * @param inspector inspecteur de la Gateway
      * @param factoryCatalog fabriques de la Gateway
-     * @param environment environnement, pour les valeurs brutes de la configuration des routes
+     * @param environment environnement, pour les valeurs brutes de la configuration des routes et les placeholders
      * @param simulator simulateur de la route éditée
      * @return le service de l'éditeur
      */
     @Bean
     public EditorService gatewayUiEditorService(final GatewayInspector inspector, final FactoryCatalog factoryCatalog,
             final ConfigurableEnvironment environment, final EditedRouteSimulator simulator) {
-        return new EditorService(inspector, factoryCatalog, RawRouteConfiguration.of(environment), simulator);
+        return new EditorService(inspector, factoryCatalog, RawRouteConfiguration.of(environment), simulator,
+                new RouteAdvisor(factoryCatalog, environment::resolvePlaceholders));
     }
 
     /**

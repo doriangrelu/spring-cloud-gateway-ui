@@ -82,6 +82,26 @@ public class FactoryCatalog {
         return filters.getOrDefault(name, FactoryDescriptor.unknown(name));
     }
 
+    /**
+     * Indique si la Gateway déclare une fabrique de prédicat de ce nom.
+     *
+     * @param name nom de la fabrique
+     * @return {@code true} si la fabrique existe
+     */
+    public boolean knowsPredicate(final String name) {
+        return predicates.containsKey(name);
+    }
+
+    /**
+     * Indique si la Gateway déclare une fabrique de filtre de ce nom.
+     *
+     * @param name nom de la fabrique
+     * @return {@code true} si la fabrique existe
+     */
+    public boolean knowsFilter(final String name) {
+        return filters.containsKey(name);
+    }
+
     private static Map<String, FactoryDescriptor> index(final List<FactoryDescriptor> descriptors) {
         // Une fabrique maison peut reprendre le nom d'une fabrique standard : la dernière déclarée l'emporte, comme dans la Gateway
         return descriptors.stream().collect(Collectors.toMap(FactoryDescriptor::name, Function.identity(), (first, last) -> last));

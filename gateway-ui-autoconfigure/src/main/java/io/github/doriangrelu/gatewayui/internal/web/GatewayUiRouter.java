@@ -71,6 +71,7 @@ public class GatewayUiRouter {
                 .GET(root + "/factories", api::factories)
                 .POST(root + "/yaml", api::yaml)
                 .POST(root + "/simulate", api::simulate)
+                .POST(root + "/advice", api::advice)
                 .build();
     }
 
