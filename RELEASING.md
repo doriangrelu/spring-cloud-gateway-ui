@@ -63,7 +63,13 @@ Exemple pour la version `0.1.0`.
 gh workflow run release.yml -f version=0.1.0
 ```
 
-L'essai à blanc construit les artefacts, les signe avec les vrais secrets et prépare le passage de `main` à la version SNAPSHOT suivante, **sans rien publier ni pousser** : ni Maven Central, ni tag, ni release GitHub, ni commit.
+L'essai à blanc construit le vrai bundle Central, le signe avec les vrais secrets, vérifie son contenu (un `.pom` et les jars attendus par artefact, une signature par fichier, aucun fichier parasite) et prépare le passage de `main` à la version SNAPSHOT suivante, **sans rien publier ni pousser** : l'envoi vers Central est détourné vers une adresse locale, et il n'y a ni tag, ni release GitHub, ni commit.
+
+Le contenu d'un bundle se vérifie aussi en local, après un build du profil `release` :
+
+```bash
+.github/scripts/check-central-bundle.sh target/central-publishing/central-bundle.zip gateway-ui-parent:pom gateway-ui-autoconfigure:jar gateway-ui-spring-boot-starter:jar
+```
 
 **2. Mettre à jour le changelog.** Dans [CHANGELOG.md](CHANGELOG.md), renommez la section `[Unreleased]` en version datée, et ajoutez une section `[Unreleased]` vide au-dessus :
 
