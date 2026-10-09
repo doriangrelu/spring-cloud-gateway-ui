@@ -36,6 +36,11 @@ S'y ajoutent :
 
 ## À essayer dans le testeur
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/images/tester-dark.png">
+  <img alt="Testeur sur GET /api/users/legacy/42 : route users retenue, users-legacy masquée" src="../docs/images/tester-light.png">
+</picture>
+
 | Requête | Résultat attendu |
 |---|---|
 | `GET /api/users/legacy/42` | Route `users` retenue, `users-legacy` masquée, chemin `/users/legacy/42` |

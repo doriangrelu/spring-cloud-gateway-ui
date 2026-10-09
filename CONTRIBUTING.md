@@ -75,6 +75,11 @@ Ces règles visent un code **lisible sans effort** : on doit comprendre une mét
 - Rendu serveur avec JTE et interactions htmx : **pas de SPA, pas de build front**.
 - Chaque écran doit rester accessible par son URL. Une requête htmx reçoit un fragment, une navigation classique la page complète.
 - Les couleurs passent par les variables CSS de `gateway-ui.css`, définies pour le thème clair et le thème sombre.
+- Après un changement visible de l'UI, régénérez les captures de la documentation, dans les deux thèmes, avec la [Gateway d'exemple](gateway-ui-sample) démarrée :
+
+  ```bash
+  docs/screenshots.sh
+  ```
 
 ## Commits et pull requests
 

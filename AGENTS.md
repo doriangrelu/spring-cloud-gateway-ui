@@ -91,6 +91,6 @@ Checkstyle fait échouer le build si l'une des règles marquées ✔ n'est pas r
 ## Documentation et commits
 
 - Tout changement visible par les utilisateurs doit être ajouté à [CHANGELOG.md](CHANGELOG.md), section `[Unreleased]`, sous la bonne rubrique (*Ajouté*, *Modifié*, *Corrigé*...).
-- Si une propriété, un filtre simulé ou un comportement change, mettez à jour le README concerné.
+- Si une propriété, un filtre simulé ou un comportement change, mettez à jour le README concerné. Si l'UI change visuellement, régénérez les captures avec `docs/screenshots.sh` (Gateway d'exemple démarrée).
 - Messages de commit au format Conventional Commits : `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `build:`, `ci:`.
 - Ne commitez ni ne poussez sans que la personne qui vous pilote le demande.

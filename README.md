@@ -9,6 +9,11 @@ Une UI embarquée dans votre **Spring Cloud Gateway (WebFlux)** pour voir, enfin
 
 Un starter à ajouter, une propriété à activer, et l'UI est disponible sur `/gateway-ui`.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/tester-dark.png">
+  <img alt="Testeur de routes : la requête GET /api/users/legacy/42 est prise par la route users, la route users-legacy est signalée comme masquée, et le chemin est réécrit en /users/legacy/42" src="docs/images/tester-light.png">
+</picture>
+
 ## Fonctionnalités
 
 | Écran | Ce qu'on y voit |
@@ -18,6 +23,48 @@ Un starter à ajouter, une propriété à activer, et l'UI est disponible sur `/
 | **Services** | Les routes regroupées par service cible, qu'il soit déclaré en configuration ou déduit des URI des routes. |
 | **Filtres globaux** | L'ordre effectif de chaque filtre global. Les filtres sans ordre explicite sont signalés, par exemple un `@Order` posé sur une méthode `@Bean`, que la Gateway ignore. |
 | **Testeur** | Pour une requête donnée (méthode, hôte, chemin, en-têtes, IP) : la route retenue, les routes **masquées** par une route prioritaire, le chemin réécrit étape par étape et la requête transmise au service. **Aucune requête n'est envoyée.** |
+
+### Aperçu
+
+#### Le parcours d'une requête dans une route
+
+Requête entrante → prédicats → **toute la chaîne de filtres**, globaux et de route mélangés dans l'ordre où la Gateway les exécute réellement → cible. C'est la vue qui répond enfin à la question « mais dans quel ordre passent mes filtres ? ».
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/route-detail-dark.png">
+  <img alt="Parcours d'une requête dans la route users : le prédicat Path, puis 13 filtres globaux et de route dans l'ordre d'exécution avec leur ordre, puis la cible" src="docs/images/route-detail-light.png">
+</picture>
+
+#### Les autres écrans
+
+<details open>
+<summary><strong>Routes</strong> : toutes les routes, dans l'ordre d'évaluation</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/routes-dark.png">
+  <img alt="Liste des routes avec leur ordre, leurs prédicats, leur cible et leur nombre de filtres" src="docs/images/routes-light.png">
+</picture>
+</details>
+
+<details>
+<summary><strong>Services</strong> : services déclarés et déduits, avec leurs routes</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/services-dark.png">
+  <img alt="Cartes des services cibles, déclarés dans la configuration ou déduits des URI des routes" src="docs/images/services-light.png">
+</picture>
+</details>
+
+<details>
+<summary><strong>Filtres globaux</strong> : ordre effectif et filtres non ordonnés</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/global-filters-dark.png">
+  <img alt="Filtres globaux triés par ordre, dont un filtre lambda signalé comme non ordonné" src="docs/images/global-filters-light.png">
+</picture>
+</details>
+
+Toutes ces captures ont été prises sur la [Gateway d'exemple](gateway-ui-sample). L'UI suit le thème clair ou sombre du système.
 
 ## Démarrage rapide
 

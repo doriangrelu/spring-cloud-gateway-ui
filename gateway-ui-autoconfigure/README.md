@@ -37,6 +37,13 @@ Les beans `GatewayInspector`, `ServiceCatalog` et `RouteTester` sont en `@Condit
 | `FilterStep` | Un filtre de la chaîne. `GatewayInspector.pipeline()` reproduit le tri de `FilteringWebHandler` : filtres globaux puis filtres de route, triés de façon stable par ordre. |
 | `ServiceCatalog` | Regroupe les routes par `scheme://host:port`, en combinant les services déclarés et ceux déduits des routes. |
 
+Voici le résultat de `pipeline()` affiché sur la page de détail d'une route. Les filtres globaux (en violet) et les filtres de route (en bleu) y sont intercalés selon leur ordre :
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/images/route-detail-dark.png">
+  <img alt="Chaîne de filtres de la route users dans l'ordre d'exécution" src="../docs/images/route-detail-light.png">
+</picture>
+
 ### `tester`
 
 Le testeur n'envoie **jamais** de requête.
