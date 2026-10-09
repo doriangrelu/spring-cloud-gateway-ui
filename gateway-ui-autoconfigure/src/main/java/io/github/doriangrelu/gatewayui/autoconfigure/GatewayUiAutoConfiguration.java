@@ -18,6 +18,8 @@ package io.github.doriangrelu.gatewayui.autoconfigure;
 import java.util.List;
 import java.util.Map;
 
+import io.github.doriangrelu.gatewayui.internal.editor.EditedRouteSimulator;
+import io.github.doriangrelu.gatewayui.internal.editor.EditedRouteSimulator.RouteDefinitionRouteLocatorFactory;
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService;
 import io.github.doriangrelu.gatewayui.internal.editor.FactoryCatalog;
 import io.github.doriangrelu.gatewayui.internal.editor.RawRouteConfiguration;
@@ -45,6 +47,7 @@ import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
 import org.springframework.cloud.gateway.handler.predicate.RoutePredicateFactory;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.cloud.gateway.route.RouteLocator;
+import org.springframework.cloud.gateway.support.ConfigurationService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -118,12 +121,44 @@ public class GatewayUiAutoConfiguration {
      * @param inspector inspecteur de la Gateway
      * @param factoryCatalog fabriques de la Gateway
      * @param environment environnement, pour les valeurs brutes de la configuration des routes
+     * @param simulator simulateur de la route éditée
      * @return le service de l'éditeur
      */
     @Bean
     public EditorService gatewayUiEditorService(final GatewayInspector inspector, final FactoryCatalog factoryCatalog,
-            final ConfigurableEnvironment environment) {
-        return new EditorService(inspector, factoryCatalog, RawRouteConfiguration.of(environment));
+            final ConfigurableEnvironment environment, final EditedRouteSimulator simulator) {
+        return new EditorService(inspector, factoryCatalog, RawRouteConfiguration.of(environment), simulator);
+    }
+
+    /**
+     * Constructeur de routes de la Gateway, pour la route éditée : mêmes fabriques, mêmes {@code default-filters}.
+     *
+     * @param predicates fabriques de prédicats
+     * @param filters fabriques de filtres
+     * @param gatewayProperties configuration de la Gateway
+     * @param configurationService liaison des arguments de la Gateway
+     * @return la fabrique de constructeurs de routes
+     */
+    @Bean
+    public RouteDefinitionRouteLocatorFactory gatewayUiRouteLocatorFactory(final List<RoutePredicateFactory<?>> predicates,
+            final List<GatewayFilterFactory<?>> filters, final ObjectProvider<GatewayProperties> gatewayProperties,
+            final ConfigurationService configurationService) {
+        return RouteDefinitionRouteLocatorFactory.of(predicates, filters, gatewayProperties.getIfAvailable(), configurationService);
+    }
+
+    /**
+     * Simulateur de la route éditée.
+     *
+     * @param factoryCatalog fabriques de la Gateway
+     * @param routeTester testeur de routes
+     * @param locators constructeur de routes de la Gateway
+     * @param environment environnement, pour résoudre les placeholders
+     * @return le simulateur
+     */
+    @Bean
+    public EditedRouteSimulator gatewayUiEditedRouteSimulator(final FactoryCatalog factoryCatalog, final RouteTester routeTester,
+            final RouteDefinitionRouteLocatorFactory locators, final ConfigurableEnvironment environment) {
+        return new EditedRouteSimulator(factoryCatalog, routeTester, locators, environment::resolvePlaceholders);
     }
 
     /**
@@ -154,7 +189,7 @@ public class GatewayUiAutoConfiguration {
         final UiContexts contexts = new UiContexts(properties.basePath(), properties.defaultLocale());
         final GatewayUiHandler handler = new GatewayUiHandler(contexts, new TemplateRenderer(), inspector, serviceCatalog,
                 routeTester);
-        return GatewayUiRouter.create(properties.basePath(), handler, new EditorApiHandler(editorService));
+        return GatewayUiRouter.create(properties.basePath(), handler, new EditorApiHandler(editorService, contexts));
     }
 
     /**

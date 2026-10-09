@@ -70,6 +70,7 @@ public class GatewayUiRouter {
                 .GET(root + "/java-routes", api::javaRoutes)
                 .GET(root + "/factories", api::factories)
                 .POST(root + "/yaml", api::yaml)
+                .POST(root + "/simulate", api::simulate)
                 .build();
     }
 

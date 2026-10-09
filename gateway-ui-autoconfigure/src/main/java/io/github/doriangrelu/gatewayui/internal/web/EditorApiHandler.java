@@ -17,8 +17,11 @@ package io.github.doriangrelu.gatewayui.internal.web;
 
 import java.nio.charset.StandardCharsets;
 
+import io.github.doriangrelu.gatewayui.internal.editor.EditableRoute;
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService;
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService.YamlRequest;
+import io.github.doriangrelu.gatewayui.internal.i18n.Message;
+import io.github.doriangrelu.gatewayui.internal.tester.TestRequest;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -35,13 +38,17 @@ public class EditorApiHandler {
 
     private final EditorService editor;
 
+    private final UiContexts contexts;
+
     /**
      * Crée le handler.
      *
      * @param editor service de l'éditeur
+     * @param contexts contextes de rendu, pour la langue des textes renvoyés
      */
-    public EditorApiHandler(final EditorService editor) {
+    public EditorApiHandler(final EditorService editor, final UiContexts contexts) {
         this.editor = editor;
+        this.contexts = contexts;
     }
 
     /**
@@ -75,6 +82,28 @@ public class EditorApiHandler {
     }
 
     /**
+     * Teste une requête contre la route éditée (ADR 0011) : la route est construite par la Gateway sans lui être ajoutée.
+     *
+     * @param request requête HTTP, avec la route éditée et la requête à tester en JSON
+     * @return le résultat, textes traduits
+     */
+    public Mono<ServerResponse> simulate(final ServerRequest request) {
+        final UiContext ui = contexts.create(request, "editor");
+        return request.bodyToMono(SimulationRequest.class)
+                .flatMap(body -> simulate(body, ui))
+                .flatMap(view -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(view));
+    }
+
+    private Mono<EditorSimulationView> simulate(final SimulationRequest body, final UiContext ui) {
+        final TestRequest test = new TestRequest(body.method(), body.path(), body.host(), body.headers(), null);
+        final Message invalid = test.validate();
+        if (invalid != null) {
+            return Mono.just(EditorSimulationView.failure(invalid, ui));
+        }
+        return editor.simulate(body.route(), test).map(outcome -> EditorSimulationView.of(outcome, ui));
+    }
+
+    /**
      * YAML des routes envoyées.
      *
      * @param request requête HTTP, avec les routes et les commentaires en JSON
@@ -84,5 +113,17 @@ public class EditorApiHandler {
         return request.bodyToMono(YamlRequest.class)
                 .map(editor::yaml)
                 .flatMap(document -> ServerResponse.ok().contentType(YAML).bodyValue(document));
+    }
+
+    /**
+     * Demande de simulation de la route éditée.
+     *
+     * @param route route éditée
+     * @param method méthode HTTP de la requête à tester
+     * @param path chemin et query string
+     * @param host hôte de la requête
+     * @param headers en-têtes, un par ligne
+     */
+    public record SimulationRequest(EditableRoute route, String method, String path, String host, String headers) {
     }
 }

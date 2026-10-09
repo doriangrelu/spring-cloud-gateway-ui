@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.doriangrelu.gatewayui.internal.inspect.GatewayInspector;
+import io.github.doriangrelu.gatewayui.internal.tester.TestRequest;
 import org.springframework.cloud.gateway.route.Route;
 import reactor.core.publisher.Mono;
 
@@ -38,20 +39,24 @@ public class EditorService {
 
     private final RawRouteConfiguration rawConfiguration;
 
+    private final EditedRouteSimulator simulator;
+
     /**
      * Crée le service.
      *
      * @param inspector inspecteur de la Gateway
      * @param catalog fabriques de la Gateway
      * @param rawConfiguration valeurs brutes de la configuration, pour rétablir les placeholders
+     * @param simulator simulation de la route éditée
      */
     public EditorService(final GatewayInspector inspector, final FactoryCatalog catalog,
-            final RawRouteConfiguration rawConfiguration) {
+            final RawRouteConfiguration rawConfiguration, final EditedRouteSimulator simulator) {
         this.inspector = inspector;
         this.catalog = catalog;
         this.editableRoutes = new EditableRoutes(catalog);
         this.yaml = new RouteYaml(catalog);
         this.rawConfiguration = rawConfiguration;
+        this.simulator = simulator;
     }
 
     /**
@@ -95,6 +100,17 @@ public class EditorService {
      */
     public String yaml(final YamlRequest request) {
         return yaml.toYaml(request.routes(), request.comments());
+    }
+
+    /**
+     * Teste une requête contre la route éditée, construite par la Gateway sans lui être ajoutée.
+     *
+     * @param route route éditée
+     * @param request requête à tester, préalablement validée
+     * @return le résultat, ou l'erreur de construction de la route
+     */
+    public Mono<EditedRouteSimulator.Outcome> simulate(final EditableRoute route, final TestRequest request) {
+        return simulator.simulate(route, request);
     }
 
     private Mono<List<String>> routeIds() {

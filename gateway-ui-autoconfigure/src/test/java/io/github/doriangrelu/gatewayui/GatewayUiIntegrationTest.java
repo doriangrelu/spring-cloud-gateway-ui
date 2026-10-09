@@ -63,6 +63,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.cloud.gateway.server.webflux.routes[4].filters[1].name=SetRequestHeader",
         "spring.cloud.gateway.server.webflux.routes[4].filters[1].args.name=X-Env",
         "spring.cloud.gateway.server.webflux.routes[4].filters[1].args.value=${env.name:dev}",
+        // Filtre par défaut : la simulation de la route éditée doit le rejouer
+        "spring.cloud.gateway.server.webflux.default-filters[0]=AddRequestHeader=X-Gateway, ui",
 })
 class GatewayUiIntegrationTest {
 
@@ -262,6 +264,65 @@ class GatewayUiIntegrationTest {
                         .startsWith("# Export\nspring:")
                         .contains("- Path=/api/orders/**")
                         .contains("- StripPrefix=1"));
+    }
+
+    @Test
+    void editorApiSimulatesTheEditedRouteWithTheGatewayFactories() {
+        simulate("""
+                {"route": {"id": "", "uri": "${orders.url}", "order": 0,
+                           "predicates": [{"name": "Path", "values": {"patterns": "/shop/{id}"}}],
+                           "filters": [{"name": "SetPath", "values": {"template": "/v3/items/{id}"}}]},
+                 "method": "GET", "path": "/shop/5"}
+                """, "en")
+                .jsonPath("$.error").doesNotExist()
+                .jsonPath("$.matched").isEqualTo(true)
+                .jsonPath("$.targetUrl").isEqualTo("http://orders.test:8080/v3/items/5")
+                .jsonPath("$.variables.id").isEqualTo("5")
+                .jsonPath("$.steps[?(@.filter == 'AddRequestHeader')].note").isNotEmpty()
+                .jsonPath("$.steps[?(@.filter == 'SetPath')].pathAfter").isEqualTo(List.of("/v3/items/5"));
+    }
+
+    @Test
+    void editorApiReportsAnEditedRouteThatDoesNotMatch() {
+        simulate("""
+                {"route": {"id": "draft", "uri": "http://draft.test", "order": 0,
+                           "predicates": [{"name": "Path", "values": {"patterns": "/draft/**"}}], "filters": []},
+                 "method": "GET", "path": "/other"}
+                """, "en")
+                .jsonPath("$.error").doesNotExist()
+                .jsonPath("$.matched").isEqualTo(false)
+                .jsonPath("$.predicate").isEqualTo("Path=/draft/**");
+    }
+
+    @Test
+    void editorApiReportsAnInvalidEditedRouteInTheUserLanguage() {
+        simulate("""
+                {"route": {"id": "draft", "uri": "http://draft.test", "order": 0,
+                           "predicates": [{"name": "Path", "values": {"patterns": "/draft/**"}}],
+                           "filters": [{"name": "Nope", "values": {}}]},
+                 "method": "GET", "path": "/draft/1"}
+                """, "fr")
+                .jsonPath("$.matched").isEqualTo(false)
+                .jsonPath("$.error").value(error -> assertThat((String) error).startsWith("Route invalide : ").contains("Nope"));
+    }
+
+    @Test
+    void editorApiValidatesTheTestedRequest() {
+        simulate("""
+                {"route": {"id": "draft", "uri": "http://draft.test", "order": 0, "predicates": [], "filters": []},
+                 "method": "FETCH IT", "path": "/draft"}
+                """, "en")
+                .jsonPath("$.error").value(error -> assertThat((String) error).contains("FETCH IT"));
+    }
+
+    private WebTestClient.BodyContentSpec simulate(final String body, final String language) {
+        return client.post().uri("/gateway-ui/api/editor/simulate")
+                .header(HttpHeaders.ACCEPT_LANGUAGE, language)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody();
     }
 
     @Test

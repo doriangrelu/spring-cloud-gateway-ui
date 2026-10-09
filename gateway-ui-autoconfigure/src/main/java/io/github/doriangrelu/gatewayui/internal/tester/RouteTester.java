@@ -66,6 +66,18 @@ public class RouteTester {
                         .map(evaluated -> toResult(request, evaluated, tuple.getT2())));
     }
 
+    /**
+     * Teste une requête contre une seule route, absente de la Gateway (route en cours d'édition, ADR 0011).
+     *
+     * @param request requête à tester, préalablement validée par {@link TestRequest#validate()}
+     * @param route route construite par la Gateway à partir de sa définition
+     * @param definition définition de la route, pour rejouer ses filtres
+     * @return l'évaluation de la route et, si elle correspond, la simulation de ses filtres
+     */
+    public Mono<TestResult> test(final TestRequest request, final Route route, final RouteDefinition definition) {
+        return evaluate(route, request).map(evaluated -> toResult(request, List.of(evaluated), Map.of(route.getId(), definition)));
+    }
+
     private Mono<List<Evaluated>> evaluateAll(final List<Route> routes, final TestRequest request) {
         return Flux.fromIterable(routes).concatMap(route -> evaluate(route, request)).collectList();
     }
