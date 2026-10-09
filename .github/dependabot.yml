@@ -17,6 +17,9 @@ updates:
       # Migration majeure d'htmx à décider dans un ADR (issue #10)
       - dependency-name: "org.webjars.npm:htmx.org"
         update-types: [ "version-update:semver-major" ]
+      # Maven 3.10 ajoute des fichiers .locks au bundle Central, qui le fait refuser (issue #22)
+      - dependency-name: "org.apache.maven:apache-maven"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
 
   - package-ecosystem: github-actions
     directory: /

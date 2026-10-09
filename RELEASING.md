@@ -138,6 +138,7 @@ Une nouvelle génération de Spring Boot ou Spring Cloud qui casse la compatibil
 | `gpg: signing failed` | `GPG_PRIVATE_KEY` incomplète (il faut tout le bloc ASCII) ou passphrase erronée. |
 | Validation Central : *Invalid signature* | Clé publique non publiée sur un serveur de clés, ou pas encore propagée : patientez puis relancez le job. |
 | Validation Central : *Missing javadoc/sources* | Le profil `release` n'a pas été activé (`-P release`). |
+| Validation Central : *Bundle has content that does NOT have a .pom file* | Le bundle contient des fichiers `.locks/…` créés par Maven 3.10 (#22). Le wrapper doit rester en Maven 3.9.x tant que `central-publishing-maven-plugin` ne les exclut pas. |
 | Échec après publication | Une version publiée sur Central est **définitive** : elle ne peut être ni supprimée ni republiée. Corrigez et publiez la version suivante. |
 
 Pour diagnostiquer un problème de secrets ou de signature sans risque, lancez un essai à blanc (voir [Publier](#publier)).
