@@ -61,9 +61,9 @@ jobs:
 
       - name: Extract release notes
         run: |
-          awk -v version="${{ steps.version.outputs.version }}" '
-            $0 ~ "^## \\[" version "\\]" { found = 1; next }
-            found && /^## \[/ { exit }
+          awk -v header="## [${{ steps.version.outputs.version }}]" '
+            index($0, header) == 1 { found = 1; next }
+            found && (index($0, "## [") == 1 || substr($0, 1, 1) == "[") { exit }
             found { print }
           ' CHANGELOG.md > release-notes.md
           cat release-notes.md

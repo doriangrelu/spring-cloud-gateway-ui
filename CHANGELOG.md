@@ -6,6 +6,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-09
+
 ### Ajouté
 
 - Starter `gateway-ui-spring-boot-starter` pour Spring Cloud Gateway Server WebFlux 5.0 (Spring Boot 4.0, Spring Cloud 2025.1, Java 25).
@@ -17,4 +19,5 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 - Testeur de routes : route retenue, routes masquées, simulation de `StripPrefix`, `PrefixPath`, `RewritePath`, `SetPath`, `AddRequestHeader`, `SetRequestHeader`, `RemoveRequestHeader`, `AddRequestParameter`, `SetRequestHostHeader` et `PreserveHostHeader`, sans émettre de requête.
 - Thèmes clair et sombre, affichage adapté au mobile.
 
-[Unreleased]: https://github.com/doriangrelu/spring-cloud-gateway-ui/commits/main
+[Unreleased]: https://github.com/doriangrelu/spring-cloud-gateway-ui/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/doriangrelu/spring-cloud-gateway-ui/releases/tag/v0.1.0

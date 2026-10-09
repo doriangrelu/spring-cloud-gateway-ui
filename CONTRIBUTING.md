@@ -2,6 +2,8 @@
 
 Merci de votre intérêt pour Gateway UI ! Ce guide décrit comment construire le projet, les règles de code et le processus de contribution.
 
+Si vous travaillez avec un assistant IA, il trouvera ces règles en version condensée dans [AGENTS.md](AGENTS.md).
+
 ## Construire
 
 Prérequis : **JDK 25**. Maven est fourni par le wrapper.
