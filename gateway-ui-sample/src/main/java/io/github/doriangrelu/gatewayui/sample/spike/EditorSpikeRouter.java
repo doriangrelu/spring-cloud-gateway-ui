@@ -21,7 +21,9 @@ import java.util.Map;
 import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
 import org.springframework.cloud.gateway.handler.predicate.RoutePredicateFactory;
 import org.springframework.cloud.gateway.route.RouteDefinition;
+import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
+import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.support.ShortcutConfigurable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,9 +34,10 @@ import org.springframework.web.reactive.function.server.HandlerFilterFunction;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Mono;
 
 /**
- * SPIKE #28, branche jetable : prototypes de l'éditeur graphique, sous {@code /gateway-ui/editor-proto}.
+ * SPIKE #28, branche jetable : prototype de l'éditeur graphique, sous {@code /gateway-ui/editor-proto}.
  *
  * <p>Fournit la page, ses scripts, les définitions des routes et la description des fabriques de prédicats et de filtres.
  */
@@ -50,26 +53,33 @@ public class EditorSpikeRouter {
     /**
      * Routes HTTP du spike.
      *
+     * @param routes routes effectives, y compris celles déclarées en Java
      * @param definitions définitions des routes déclaratives
      * @param predicates fabriques de prédicats de la Gateway
      * @param filters fabriques de filtres de la Gateway
      * @return la fonction de routage
      */
     @Bean
-    RouterFunction<ServerResponse> editorSpike(final RouteDefinitionLocator definitions,
+    RouterFunction<ServerResponse> editorSpike(final RouteLocator routes, final RouteDefinitionLocator definitions,
             final List<RoutePredicateFactory<?>> predicates, final List<GatewayFilterFactory<?>> filters) {
         return RouterFunctions.route()
                 .GET(BASE, request -> ServerResponse.ok().contentType(MediaType.TEXT_HTML)
                         .body(BodyInserters.fromResource(new ClassPathResource("spike/editor.html"))))
                 .GET(BASE + "/api/routes", request -> ServerResponse.ok()
                         .body(definitions.getRouteDefinitions().map(EditorSpikeRouter::route), Map.class))
+                .GET(BASE + "/api/java-routes", request -> ServerResponse.ok().body(javaRoutes(routes, definitions), List.class))
                 .GET(BASE + "/api/factories", request -> ServerResponse.ok()
                         .bodyValue(Map.of("predicates", describe(predicates), "filters", describe(filters))))
                 .add(RouterFunctions.resources(BASE + "/static/**", new ClassPathResource("spike/")))
-                .add(RouterFunctions.resources(BASE + "/drawflow/**",
-                        new ClassPathResource("META-INF/resources/webjars/drawflow/0.0.60/dist/")))
                 .build()
                 .filter(securityHeaders());
+    }
+
+    /** Routes déclarées en Java : sans définition, donc non éditables. */
+    private static Mono<List<String>> javaRoutes(final RouteLocator routes,
+            final RouteDefinitionLocator definitions) {
+        return definitions.getRouteDefinitions().map(RouteDefinition::getId).collectList()
+                .flatMap(declared -> routes.getRoutes().map(Route::getId).filter(id -> !declared.contains(id)).collectList());
     }
 
     private static Map<String, Object> route(final RouteDefinition definition) {

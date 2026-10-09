@@ -27,12 +27,6 @@
             <groupId>io.github.doriangrelu</groupId>
             <artifactId>gateway-ui-spring-boot-starter</artifactId>
         </dependency>
-        <!-- SPIKE #28 (branche jetable) : prototype de l'éditeur avec Drawflow -->
-        <dependency>
-            <groupId>org.webjars.npm</groupId>
-            <artifactId>drawflow</artifactId>
-            <version>0.0.60</version>
-        </dependency>
     </dependencies>
 
     <build>

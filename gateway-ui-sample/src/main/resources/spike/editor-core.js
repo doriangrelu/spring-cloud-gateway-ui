@@ -1,63 +1,243 @@
 /*
- * SPIKE #28 (branche jetable) : modèle de route, formulaires générés et YAML, communs aux deux moteurs de rendu.
+ * SPIKE #28 : orchestration de l'éditeur (panneau des routes, contexte, canevas, aide, test en direct, export).
  */
 const Editor = (() => {
-    const state = { factories: { predicates: [], filters: [] }, route: null, selected: { kind: 'target', index: 0 }, renderer: null };
+    const STATUS = {
+        unchanged: ['inchangée', ''], modified: ['modifiée', 'chip-shadowed'], new: ['nouvelle', 'chip-match'],
+        removed: ['retirée', 'chip-error'], java: ['Java, lecture seule', '']
+    };
+    let selection = { kind: 'target', index: 0 };
+    let exportMode = 'current';
+    let testPath = null;
 
-    const factory = (kind, name) => (kind === 'predicate' ? state.factories.predicates : state.factories.filters)
-        .find(f => f.name === name) || { name, fields: [], shortcutType: 'DEFAULT' };
-
-    // Les arguments déclarés en forme raccourcie arrivent indexés (_genkey_0...) : on les rattache aux champs de la fabrique
-    function fromDefinition(kind, definition) {
-        const f = factory(kind, definition.name);
-        const raw = Object.entries(definition.args || {});
-        const generated = raw.every(([key]) => key.startsWith('_genkey_'));
-        const values = {};
-        if (!generated) {
-            raw.forEach(([key, value]) => { values[key] = value; });
-        } else if (f.shortcutType.startsWith('GATHER_LIST')) {
-            let items = raw.map(([, value]) => value);
-            if (f.shortcutType === 'GATHER_LIST_TAIL_FLAG' && /^(true|false)$/.test(items[items.length - 1] || '')) {
-                values[f.fields[1]] = items.pop();
-            }
-            values[f.fields[0]] = items.join(', ');
-        } else {
-            raw.forEach(([, value], index) => { values[f.fields[index] || ('arg' + index)] = value; });
+    const el = id => document.getElementById(id);
+    const make = (tag, className, text) => {
+        const element = document.createElement(tag);
+        if (className) {
+            element.className = className;
         }
-        return { name: definition.name, values };
+        if (text != null) {
+            element.textContent = text;
+        }
+        return element;
+    };
+    const button = (label, onClick, className) => {
+        const b = make('button', className || 'secondary', label);
+        b.type = 'button';
+        b.addEventListener('click', onClick);
+        return b;
+    };
+    const entry = () => Workspace.selected();
+    const route = () => (entry() && !entry().java && !entry().removed ? entry().current : null);
+    const items = kind => (kind === 'predicate' ? route().predicates : route().filters);
+
+    // Panneau des routes : celles de la Gateway, puis les nouvelles
+    function renderSidebar() {
+        const sidebar = el('sidebar');
+        sidebar.replaceChildren();
+        const groups = [['Routes de la Gateway', e => e.original || e.java], ['Nouvelles routes', e => !e.original && !e.java]];
+        groups.forEach(([title, filter]) => {
+            sidebar.append(make('h3', 'side-title', title));
+            const list = make('ul', 'side-list');
+            Workspace.entries().filter(filter).forEach(e => {
+                const status = Workspace.status(e);
+                const item = make('li', e === entry() ? 'active' : '');
+                const link = button('', () => { Workspace.select(e.key); selection = { kind: 'target', index: 0 }; testPath = null; render(); }, 'side-item');
+                link.append(make('span', 'mono', e.java ? e.id : e.current.id), make('span', 'chip ' + STATUS[status][1], STATUS[status][0]));
+                item.append(link);
+                list.append(item);
+            });
+            sidebar.append(list);
+        });
+        sidebar.append(button('+ Nouvelle route', () => { Workspace.create(); selection = { kind: 'target', index: 0 }; testPath = null; render(); }, 'side-new'));
     }
 
-    function load(definition) {
-        state.route = {
-            id: definition.id, uri: definition.uri, order: definition.order || 0,
-            predicates: definition.predicates.map(p => fromDefinition('predicate', p)),
-            filters: definition.filters.map(f => fromDefinition('filter', f))
-        };
-        select('target', 0);
+    function renderContext() {
+        const e = entry();
+        const context = el('context');
+        context.replaceChildren();
+        if (!e) {
+            return;
+        }
+        const status = Workspace.status(e);
+        const label = { new: 'Nouvelle route', unchanged: 'Route existante', modified: 'Route existante, modifiée',
+            removed: 'Route retirée de la configuration', java: 'Route déclarée en Java' }[status];
+        const title = make('div', 'context-title');
+        title.append(make('span', 'context-label', label), make('h2', 'mono', e.java ? e.id : e.current.id));
+        const actions = make('div', 'context-actions');
+        if (route()) {
+            actions.append(button('+ Prédicat', () => Palette.open('predicate', name => add('predicate', name))),
+                button('+ Filtre', () => Palette.open('filter', name => add('filter', name)), 'primary'),
+                button('Dupliquer', () => { Workspace.duplicate(e.key); selection = { kind: 'target', index: 0 }; render(); }));
+        }
+        if (status === 'modified' || status === 'removed') {
+            actions.append(button(status === 'removed' ? 'Rétablir' : '↺ Annuler les modifications', () => { Workspace.reset(e.key); render(); }));
+        }
+        if (!e.java && status !== 'removed') {
+            actions.append(button(e.original ? 'Retirer de la configuration' : 'Supprimer', () => { Workspace.remove(e.key); selection = { kind: 'target', index: 0 }; render(); }, 'danger'));
+        }
+        context.append(title, actions);
     }
 
-    function blank() {
-        load({ id: 'nouvelle-route', uri: 'http://service.namespace.svc.cluster.local:8080', order: 0,
-            predicates: [{ name: 'Path', args: { _genkey_0: '/api/**' } }], filters: [] });
+    function renderCanvas() {
+        const e = entry();
+        if (route()) {
+            CanvasRenderer.render(route(), selection);
+            return;
+        }
+        const message = !e ? 'Aucune route.' : e.java
+            ? 'Cette route est déclarée en Java (DSL) : sans définition déclarative, elle ne peut être ni éditée ni exportée en YAML.'
+            : 'Route retirée : elle n\'apparaîtra pas dans l\'export de la configuration complète. « Rétablir » pour la récupérer.';
+        el('canvas').replaceChildren(make('p', 'empty', message));
     }
 
-    const items = kind => (kind === 'predicate' ? state.route.predicates : state.route.filters);
+    function help(kind, name) {
+        const doc = Catalog.describe(kind, name);
+        const box = make('div', 'help');
+        const head = make('div', 'help-head');
+        head.append(make('span', 'tag', doc.category), make('span', 'help-kind', kind === 'predicate' ? 'Prédicat' : 'Filtre'));
+        box.append(head, make('p', 'help-summary', doc.summary));
+        if (doc.details) {
+            box.append(make('p', 'help-details', doc.details));
+        }
+        if (doc.example) {
+            box.append(make('pre', 'help-example mono', doc.example));
+        }
+        const link = make('a', 'help-link', 'Documentation de Spring Cloud Gateway ↗');
+        link.href = doc.doc;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        box.append(link);
+        return { box, args: doc.args || {} };
+    }
+
+    function input(label, value, onInput, hint) {
+        const wrapper = make('label', 'panel-field', label);
+        const field = make('input', 'mono');
+        field.value = value == null ? '' : value;
+        field.addEventListener('input', () => onInput(field.value));
+        wrapper.append(field);
+        if (hint) {
+            wrapper.title = hint;
+            wrapper.append(make('small', '', hint));
+        }
+        return wrapper;
+    }
+
+    function renderPanel() {
+        const panel = el('panel');
+        panel.replaceChildren();
+        if (!route()) {
+            panel.append(make('p', 'hint', 'Sélectionnez une route éditable.'));
+            return;
+        }
+        if (selection.kind === 'target') {
+            panel.append(make('h2', '', 'Route'),
+                make('p', 'hint', 'Identifiant, service appelé et ordre d\'évaluation (le plus petit est évalué en premier).'),
+                input('Identifiant', route().id, v => update('target', 0, 'id', v), 'Unique dans la configuration.'),
+                input('URI cible', route().uri, v => update('target', 0, 'uri', v), 'Seuls le schéma, l\'hôte et le port sont utilisés : le chemin vient de la requête.'),
+                input('Ordre', route().order, v => update('target', 0, 'order', v), '0 par défaut. Une valeur plus élevée est évaluée plus tard.'));
+            return;
+        }
+        const { kind, index } = selection;
+        const item = items(kind)[index];
+        const { box, args } = help(kind, item.name);
+        panel.append(make('h2', '', item.name), box);
+        Model.fields(kind, item).forEach(name => panel.append(input(name, item.values[name], v => update(kind, index, name, v), args[name])));
+        const actions = make('div', 'panel-actions');
+        actions.append(button('← Avant', () => move(kind, index, index - 1)), button('Après →', () => move(kind, index, index + 1)),
+            button('Supprimer', () => remove(kind, index), 'danger'));
+        panel.append(actions);
+    }
+
+    function defaultPath(r) {
+        const path = r.predicates.find(p => p.name === 'Path');
+        const pattern = path ? (path.values.patterns || '').split(',')[0].trim() : '/';
+        return pattern.replace(/\/\*\*$/, '/42').replace(/\{\*?(\w+)(:[^}]*)?\}/g, '42').replace(/\*/g, 'x') || '/';
+    }
+
+    function renderTest() {
+        const box = el('live-test');
+        box.replaceChildren();
+        if (!route()) {
+            return;
+        }
+        if (testPath === null) {
+            testPath = defaultPath(route());
+        }
+        const line = make('div', 'test-line');
+        const field = make('input', 'mono grow');
+        field.value = testPath;
+        field.setAttribute('aria-label', 'Chemin à tester');
+        field.addEventListener('input', () => { testPath = field.value; renderResult(); });
+        line.append(make('span', 'test-label', 'Tester'), make('span', 'method', 'GET'), field);
+        box.append(line, make('div', 'test-result'), make('ul', 'lint'));
+        renderResult();
+    }
+
+    function renderResult() {
+        const result = document.querySelector('#live-test .test-result');
+        const lintList = document.querySelector('#live-test .lint');
+        if (!result || !route()) {
+            return;
+        }
+        const outcome = Simulator.test(route(), testPath || '/', 'GET');
+        result.replaceChildren();
+        if (!outcome.matched) {
+            result.append(make('p', 'test-ko', '✘ Cette route ne prend pas ce chemin (' + (outcome.reason || '') + ')'));
+        } else {
+            result.append(make('p', 'test-ok', '✔ ' + outcome.target));
+            outcome.steps.forEach(step => result.append(make('p', 'test-step mono', step.simulated
+                ? `${step.name} : ${step.before} → ${step.after}` : `${step.name} : effet non simulé${step.error ? ' (' + step.error + ')' : ''}`)));
+            const vars = Object.entries(outcome.vars || {});
+            if (vars.length) {
+                result.append(make('p', 'test-step mono', 'Variables : ' + vars.map(([k, v]) => k + '=' + v).join(', ')));
+            }
+        }
+        const others = Workspace.entries().filter(e => e !== entry() && e.current && !e.removed).map(e => e.current);
+        lintList.replaceChildren(...Simulator.lint(route(), others).map(a => make('li', 'lint-' + a.level, a.text)));
+    }
+
+    function renderExport() {
+        document.querySelectorAll('[data-export]').forEach(b => b.classList.toggle('active', b.dataset.export === exportMode));
+        el('yaml').textContent = Workspace.yaml(exportMode);
+    }
+
+    function render() {
+        renderSidebar();
+        renderContext();
+        renderCanvas();
+        renderPanel();
+        renderTest();
+        renderExport();
+    }
+
+    // Après une saisie : tout sauf le formulaire, pour ne pas perdre le focus
+    function refresh() {
+        Workspace.save();
+        renderSidebar();
+        renderContext();
+        CanvasRenderer.refreshLabels(route());
+        renderResult();
+        renderExport();
+    }
 
     function select(kind, index) {
-        state.selected = { kind, index };
+        selection = { kind, index };
         render();
     }
 
     function add(kind, name) {
-        const f = factory(kind, name);
         const values = {};
-        f.fields.forEach(field => { values[field] = ''; });
+        Model.factory(kind, name).fields.forEach(field => { values[field] = ''; });
         items(kind).push({ name, values });
+        Workspace.save();
         select(kind, items(kind).length - 1);
     }
 
     function remove(kind, index) {
         items(kind).splice(index, 1);
+        Workspace.save();
         select('target', 0);
     }
 
@@ -68,129 +248,21 @@ const Editor = (() => {
         }
         const [item] = list.splice(from, 1);
         list.splice(to, 0, item);
+        Workspace.save();
         select(kind, to);
     }
 
     function update(kind, index, field, value) {
         if (kind === 'target') {
-            state.route[field] = value;
+            route()[field] = value;
         } else {
             items(kind)[index].values[field] = value;
         }
-        renderYaml();
-        state.renderer.refreshLabels(state.route);
-    }
-
-    // Forme raccourcie : Nom=valeur1, valeur2 ; les listes (GATHER_LIST) sont déjà séparées par des virgules
-    function shortcut(kind, item) {
-        const f = factory(kind, item.name);
-        const fields = f.fields.length ? f.fields : Object.keys(item.values);
-        const values = fields.map(field => (item.values[field] || '').trim());
-        while (values.length && values[values.length - 1] === '') {
-            values.pop();
-        }
-        return values.length ? item.name + '=' + values.join(', ') : item.name;
-    }
-
-    // Spring résout ${...} dans le YAML : un $ { littéral (RewritePath) doit s'écrire $\{
-    function yamlValue(text) {
-        const escaped = text.replace(/\$\{/g, '$\\{');
-        return /(: | #|^[*&!|>'"%@`{}\[\]])/.test(escaped) ? "'" + escaped.replace(/'/g, "''") + "'" : escaped;
-    }
-
-    function yaml(route) {
-        const lines = ['spring:', '  cloud:', '    gateway:', '      server:', '        webflux:', '          routes:',
-            '            - id: ' + yamlValue(route.id), '              uri: ' + yamlValue(route.uri)];
-        if (String(route.order) !== '0' && String(route.order) !== '') {
-            lines.push('              order: ' + route.order);
-        }
-        [['predicates', 'predicate'], ['filters', 'filter']].forEach(([key, kind]) => {
-            if (route[key].length) {
-                lines.push('              ' + key + ':');
-                route[key].forEach(item => lines.push('                - ' + yamlValue(shortcut(kind, item))));
-            }
-        });
-        return lines.join('\n');
-    }
-
-    function renderYaml() {
-        document.getElementById('yaml').textContent = yaml(state.route);
-    }
-
-    function field(label, value, onInput, hint) {
-        const wrapper = document.createElement('label');
-        wrapper.className = 'panel-field';
-        wrapper.append(label);
-        const input = document.createElement('input');
-        input.className = 'mono';
-        input.value = value == null ? '' : value;
-        input.addEventListener('input', () => onInput(input.value));
-        wrapper.append(input);
-        if (hint) {
-            const small = document.createElement('small');
-            small.textContent = hint;
-            wrapper.append(small);
-        }
-        return wrapper;
-    }
-
-    function button(label, onClick, className) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = label;
-        b.className = className || 'secondary';
-        b.addEventListener('click', onClick);
-        return b;
-    }
-
-    function renderPanel() {
-        const panel = document.getElementById('panel');
-        panel.replaceChildren();
-        const { kind, index } = state.selected;
-        const title = document.createElement('h2');
-        if (kind === 'target') {
-            title.textContent = 'Route';
-            panel.append(title,
-                field('Identifiant', state.route.id, v => update('target', 0, 'id', v)),
-                field('URI cible', state.route.uri, v => update('target', 0, 'uri', v)),
-                field('Ordre', state.route.order, v => update('target', 0, 'order', v)));
-            return;
-        }
-        const item = items(kind)[index];
-        const f = factory(kind, item.name);
-        title.textContent = item.name;
-        const subtitle = document.createElement('p');
-        subtitle.className = 'hint';
-        subtitle.textContent = (kind === 'predicate' ? 'Prédicat' : 'Filtre') + ' n° ' + (index + 1)
-            + ' · formulaire généré depuis la fabrique de la Gateway';
-        panel.append(title, subtitle);
-        const fields = f.fields.length ? f.fields : Object.keys(item.values);
-        fields.forEach((name, i) => {
-            const list = f.shortcutType.startsWith('GATHER_LIST') && i === 0;
-            panel.append(field(name, item.values[name], v => update(kind, index, name, v), list ? 'Plusieurs valeurs : séparées par des virgules' : null));
-        });
-        if (!fields.length) {
-            const none = document.createElement('p');
-            none.className = 'hint';
-            none.textContent = 'Aucun argument.';
-            panel.append(none);
-        }
-        const actions = document.createElement('div');
-        actions.className = 'panel-actions';
-        actions.append(button('← Avant', () => move(kind, index, index - 1)),
-            button('Après →', () => move(kind, index, index + 1)),
-            button('Supprimer', () => remove(kind, index), 'danger'));
-        panel.append(actions);
-    }
-
-    function render() {
-        state.renderer.render(state.route, state.selected);
-        renderPanel();
-        renderYaml();
+        refresh();
     }
 
     return {
-        state, load, blank, select, add, remove, move, render, shortcut, yaml,
-        useRenderer(renderer) { state.renderer = renderer; }
+        render, select, move,
+        setExportMode(mode) { exportMode = mode; renderExport(); }
     };
 })();

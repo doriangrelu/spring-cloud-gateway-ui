@@ -1,22 +1,34 @@
-/* SPIKE #28 : style des prototypes d'éditeur, sur les variables de couleur de l'UI. */
-.editor-main { max-width: 1400px; }
-.editor-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
-.editor-toolbar label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
-.toolbar-sep { flex: 0 0 1px; align-self: stretch; background: var(--border); margin: 0 6px; }
+/* SPIKE #28 : style du prototype d'éditeur, sur les variables de couleur de l'UI. */
+.editor-main { max-width: 1500px; }
 button.secondary { background: var(--surface-2); color: var(--text); border-color: var(--border); }
 button.danger { background: var(--error-soft); color: var(--error); border-color: var(--error-soft); }
+button.small { padding: 4px 10px; font-size: 12px; }
+.notice { background: var(--accent-soft); color: var(--accent); padding: 8px 12px; border-radius: 6px; margin: 0 0 16px; }
 
-.editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; margin-bottom: 16px; }
-.editor-layout > .card { margin-bottom: 0; }
-.editor-canvas { position: relative; min-height: 380px; }
-.editor-panel h2 { margin-bottom: 4px; }
-.panel-field { display: grid; gap: 4px; margin-top: 12px; font-size: 12px; color: var(--muted); }
-.panel-field small { color: var(--muted); }
-.panel-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-.yaml-head { display: flex; justify-content: space-between; align-items: center; }
-.yaml { margin: 0; white-space: pre; overflow-x: auto; background: var(--surface-2); padding: 12px; border-radius: 6px; }
+.editor-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr) 340px; gap: 16px; margin-bottom: 16px; align-items: start; }
+.editor-layout .card { margin-bottom: 0; }
+.editor-center { display: grid; gap: 16px; min-width: 0; }
 
-/* Canevas maison */
+/* Panneau des routes */
+.side-title { margin: 4px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.side-list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 2px; }
+.side-item { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 6px; text-align: left;
+    background: none; border: 1px solid transparent; color: var(--text); padding: 6px 8px; font-weight: 400; }
+.side-item:hover { background: var(--surface-2); }
+.side-list li.active .side-item { background: var(--accent-soft); border-color: var(--accent); }
+.side-item .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-item .chip { flex: none; }
+.side-new { width: 100%; background: none; color: var(--accent); border: 1px dashed var(--accent); }
+
+/* Contexte de la route */
+.context { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.context-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.context h2 { margin: 2px 0 0; font-size: 18px; }
+.context-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.context-actions button { padding: 5px 10px; font-size: 13px; }
+
+/* Canevas */
+.editor-canvas { position: relative; min-height: 220px; }
 .canvas-flow { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 40px 56px; padding: 24px 8px; }
 .canvas-links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .canvas-links .link { fill: none; stroke: var(--muted); stroke-width: 1.5; opacity: .6; }
@@ -35,21 +47,53 @@ button.danger { background: var(--error-soft); color: var(--error); border-color
 .node-group { display: grid; gap: 8px; padding: 10px; border: 1px dashed var(--border); border-radius: 10px; }
 .group-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 
-/* Drawflow */
-.drawflow-host { position: relative; width: 100%; height: 420px; border-radius: 8px; overflow: hidden;
-    background-color: var(--surface-2);
-    background-image: radial-gradient(var(--border) 1px, transparent 1px); background-size: 20px 20px; }
-.drawflow .drawflow-node { width: 200px; padding: 8px 10px; border-radius: 8px; color: var(--text);
-    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); }
-.drawflow .drawflow-node.selected, .drawflow .drawflow-node.df-selected { background: var(--accent-soft); border-color: var(--accent); }
-.drawflow .drawflow-node.df-request { border-left-color: var(--muted); }
-.drawflow .drawflow-node.df-predicate { border-left-color: var(--warn); }
-.drawflow .drawflow-node.df-target { border-left-color: var(--ok); }
-.drawflow .drawflow-node .input, .drawflow .drawflow-node .output { width: 12px; height: 12px; background: var(--surface); border: 2px solid var(--muted); }
-.drawflow .connection .main-path { stroke: var(--muted); stroke-width: 2px; }
-.df-title { font-weight: 600; }
-.df-args { color: var(--muted); font-size: 11.5px; word-break: break-all; }
+/* Test en direct et conseils */
+.test-line { display: flex; gap: 8px; align-items: center; }
+.test-line .grow { flex: 1; }
+.test-label { font-weight: 600; }
+.test-result p { margin: 8px 0 0; }
+.test-ok { color: var(--ok); font-weight: 600; word-break: break-all; }
+.test-ko { color: var(--warn); font-weight: 600; }
+.test-step { color: var(--muted); }
+.lint { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.lint li { padding: 6px 10px; border-radius: 6px; font-size: 13px; }
+.lint-warn { background: var(--warn-soft); color: var(--warn); }
+.lint-error { background: var(--error-soft); color: var(--error); }
 
-@media (max-width: 900px) {
+/* Propriétés et aide */
+.editor-panel h2 { margin-bottom: 8px; }
+.panel-field { display: grid; gap: 4px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.panel-field small { color: var(--muted); line-height: 1.35; }
+.panel-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.help { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.help-head { display: flex; gap: 8px; align-items: center; }
+.help-kind { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.help-summary { margin: 8px 0 4px; font-weight: 500; }
+.help-details { margin: 4px 0; color: var(--muted); }
+.help-example { margin: 8px 0; padding: 8px; background: var(--surface); border-radius: 6px; white-space: pre-wrap; }
+.help-link { font-size: 12px; }
+
+/* Export */
+.yaml-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.yaml-head h2 { margin: 0; }
+.yaml-head .switch { margin-right: auto; }
+.yaml { margin: 12px 0 0; white-space: pre; overflow-x: auto; background: var(--surface-2); padding: 12px; border-radius: 6px; }
+
+/* Palette */
+.palette { width: min(560px, calc(100vw - 32px)); border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: var(--surface); color: var(--text); }
+.palette::backdrop { background: rgba(0, 0, 0, .35); }
+.palette h2 { margin: 0 0 10px; }
+.palette input { width: 100%; }
+#palette-list { list-style: none; margin: 10px 0 0; padding: 0; max-height: 360px; overflow-y: auto; }
+#palette-list li { padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+#palette-list li.active { background: var(--accent-soft); }
+.palette-head { display: flex; justify-content: space-between; gap: 8px; }
+.palette-summary { font-size: 13px; margin-top: 2px; }
+
+@media (max-width: 1100px) {
+    .editor-layout { grid-template-columns: 200px minmax(0, 1fr); }
+    .editor-panel { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
     .editor-layout { grid-template-columns: 1fr; }
 }

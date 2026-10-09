@@ -3,61 +3,63 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Prototype d'éditeur · Gateway UI</title>
+    <title>Éditeur de routes (prototype) · Gateway UI</title>
     <link rel="stylesheet" href="/gateway-ui/assets/gateway-ui.css">
-    <link rel="stylesheet" href="/gateway-ui/editor-proto/drawflow/drawflow.min.css">
     <link rel="stylesheet" href="/gateway-ui/editor-proto/static/editor.css">
-    <script src="/gateway-ui/editor-proto/drawflow/drawflow.min.js" defer></script>
-    <script src="/gateway-ui/editor-proto/static/editor-core.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/catalog.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/model.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/workspace.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/simulator.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/palette.js" defer></script>
     <script src="/gateway-ui/editor-proto/static/renderer-canvas.js" defer></script>
-    <script src="/gateway-ui/editor-proto/static/renderer-drawflow.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/editor-core.js" defer></script>
     <script src="/gateway-ui/editor-proto/static/main.js" defer></script>
 </head>
 <body>
 <header class="topbar">
     <a class="brand" href="/gateway-ui/routes">
-        <span class="brand-text">Gateway UI<small>Prototype d'éditeur (spike #28)</small></span>
+        <span class="brand-text">Gateway UI<small>Éditeur de routes, prototype (spike #28)</small></span>
     </a>
     <div class="preferences">
-        <nav class="switch" aria-label="Moteur de rendu">
-            <a href="?mode=canvas" data-mode="canvas">Canevas maison</a>
-            <a href="?mode=drawflow" data-mode="drawflow">Drawflow</a>
-        </nav>
+        <button type="button" id="reset-workspace" class="secondary small">Repartir de la configuration de la Gateway</button>
     </div>
 </header>
 <main class="editor-main">
-    <div class="editor-toolbar card">
-        <label>Route
-            <select id="route-select"></select>
-        </label>
-        <button type="button" id="new-route" class="secondary">Nouvelle route</button>
-        <span class="toolbar-sep"></span>
-        <label>Prédicat
-            <select id="predicate-factory"></select>
-        </label>
-        <button type="button" id="add-predicate" class="secondary">Ajouter</button>
-        <label>Filtre
-            <select id="filter-factory"></select>
-        </label>
-        <button type="button" id="add-filter" class="secondary">Ajouter</button>
-    </div>
-
+    <p class="notice" id="restored" hidden>Votre travail précédent a été restauré depuis ce navigateur.</p>
     <div class="editor-layout">
-        <section class="card editor-canvas-card">
-            <h2 id="mode-title"></h2>
-            <p class="hint" id="mode-hint"></p>
-            <div id="canvas" class="editor-canvas"></div>
+        <aside class="card editor-sidebar" id="sidebar" aria-label="Routes de la configuration"></aside>
+
+        <section class="editor-center">
+            <div class="card">
+                <div class="context" id="context"></div>
+                <div id="canvas" class="editor-canvas"></div>
+            </div>
+            <div class="card live-test" id="live-test" aria-label="Test en direct de la route"></div>
         </section>
-        <aside class="card editor-panel" id="panel"></aside>
+
+        <aside class="card editor-panel" id="panel" aria-label="Propriétés"></aside>
     </div>
 
     <section class="card">
         <div class="yaml-head">
-            <h2>YAML généré</h2>
+            <h2>Export YAML</h2>
+            <nav class="switch" aria-label="Contenu de l'export">
+                <a href="#" data-export="current">Route courante</a>
+                <a href="#" data-export="full">Configuration complète</a>
+                <a href="#" data-export="changes">Modifications seulement</a>
+            </nav>
             <button type="button" id="copy-yaml">Copier</button>
         </div>
         <pre class="yaml mono" id="yaml"></pre>
     </section>
 </main>
+
+<dialog id="palette" class="palette" aria-labelledby="palette-title">
+    <h2 id="palette-title"></h2>
+    <input id="palette-input" type="search" placeholder="Rechercher : nom, description, catégorie…" autocomplete="off"
+           role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="list">
+    <ul id="palette-list" role="listbox"></ul>
+    <p class="hint">↑ ↓ pour naviguer, Entrée pour ajouter, Échap pour fermer.</p>
+</dialog>
 </body>
 </html>

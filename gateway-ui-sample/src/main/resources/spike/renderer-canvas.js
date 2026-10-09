@@ -22,7 +22,7 @@ const CanvasRenderer = (() => {
         return element;
     }
 
-    const detail = (kind, item) => Editor.shortcut(kind, item).replace(/^[^=]*=?/, '');
+    const detail = (kind, item) => Model.shortcut(kind, item).replace(/^[^=]*=?/, '');
 
     function draggable(element, index) {
         element.draggable = true;
