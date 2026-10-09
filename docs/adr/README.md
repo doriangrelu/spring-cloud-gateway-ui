@@ -20,3 +20,6 @@ Les décisions structurantes du projet, au format [MADR](https://adr.github.io/m
 | [0008](0008-api-publique-et-compatibilite.md) | API publique et politique de compatibilité | Accepté |
 | [0009](0009-internationalisation.md) | Internationalisation de l'UI en français et en anglais | Accepté |
 | [0010](0010-securiser-l-acces-a-l-ui.md) | Sécuriser l'accès à l'UI | Accepté |
+| [0011](0011-technique-de-l-editeur.md) | Technique de l'éditeur graphique | Accepté |
+| [0012](0012-modele-d-edition-et-export.md) | Modèle d'édition et export YAML | Accepté |
+| [0013](0013-catalogue-documente.md) | Catalogue documenté des prédicats et filtres | Accepté |
