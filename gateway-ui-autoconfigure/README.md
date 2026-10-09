@@ -72,6 +72,14 @@ Les filtres qui n'agissent que sur la réponse sont signalés comme tels. Tous l
 - **Templates** : `TemplateRenderer` utilise des templates JTE précompilés dans un paquet dédié (`io.github.doriangrelu.gatewayui.internal.jte`). Il n'enregistre aucun `ViewResolver`, n'embarque aucun compilateur et n'interfère pas avec le rendu de l'application hôte.
 - **htmx** : le script est servi depuis le webjar `org.webjars.npm:htmx.org`. Sa version est lue dans le webjar lui-même, pour ne pas la dupliquer.
 
+### `i18n`
+
+Les textes de l'UI sont dans `src/main/resources/io/github/doriangrelu/gatewayui/internal/i18n/messages_en.properties` et `messages_fr.properties` ([ADR 0009](../docs/adr/0009-internationalisation.md)). Ils sont lus par la classe `Messages`, propre à l'UI : le `MessageSource` de l'application hôte n'est jamais utilisé.
+
+- `inspect` et `tester` ne produisent pas de texte mais des `Message` (clé et arguments), traduits au rendu.
+- La langue est choisie par `UiLocaleResolver` : sélecteur de l'UI (paramètre `lang`, mémorisé dans le cookie `gateway-ui-lang`), puis `Accept-Language`, puis `gateway.ui.default-locale`.
+- `MessagesTest` vérifie que les deux fichiers ont exactement les mêmes clés.
+
 ## Templates et style
 
 - Les templates sont dans `src/main/jte` : `layout.jte` porte la structure commune, les autres fichiers correspondent aux pages et aux fragments htmx (`routesTable`, `testerResult`).

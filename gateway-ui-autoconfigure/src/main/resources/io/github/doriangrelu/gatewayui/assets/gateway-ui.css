@@ -93,6 +93,11 @@ h1.mono { font-size: 20px; }
 .nav-link:hover { background: var(--surface-2); text-decoration: none; }
 .nav-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
 
+.lang-switch { margin-left: auto; display: flex; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; }
+.lang-switch a { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.lang-switch a:hover { text-decoration: none; background: var(--surface-2); }
+.lang-switch a.active { background: var(--accent-soft); color: var(--accent); }
+
 main { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
 .page-head {

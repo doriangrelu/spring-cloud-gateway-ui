@@ -55,7 +55,7 @@ class TestRequestTest {
 
     @Test
     void rejectsInvalidMethodAndHost() {
-        assertThat(new TestRequest("G-T", "/", null, null, null).validate()).startsWith("Méthode HTTP invalide");
+        assertThat(new TestRequest("G-T", "/", null, null, null).validate().key()).isEqualTo("tester.error.method");
         assertThat(new TestRequest("GET", "/", "bad host", null, null).validate()).isNotNull();
     }
 

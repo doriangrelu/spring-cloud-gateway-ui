@@ -19,6 +19,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -33,6 +34,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  *     enabled: true
  *     base-path: /gateway-ui
  *     discover-services: true
+ *     default-locale: en
  *     services:
  *       orders:
  *         url: http://orders.shop.svc.cluster.local:8080
@@ -43,13 +45,15 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param basePath préfixe sous lequel l'UI et ses ressources sont servies, {@code /gateway-ui} par défaut
  * @param discoverServices déduit les services à partir des URI des routes
  * @param services services déclarés explicitement, ou surcharges des services déduits, indexés par nom
+ * @param defaultLocale langue de l'UI quand ni le sélecteur ni le navigateur n'en demandent une supportée ({@code en} ou {@code fr})
  */
 @ConfigurationProperties(GatewayUiProperties.PREFIX)
 public record GatewayUiProperties(
         @DefaultValue("false") boolean enabled,
         @DefaultValue(GatewayUiProperties.DEFAULT_BASE_PATH) String basePath,
         @DefaultValue("true") boolean discoverServices,
-        Map<String, Service> services) {
+        Map<String, Service> services,
+        @DefaultValue("en") Locale defaultLocale) {
 
     /** Préfixe des propriétés de l'UI. */
     public static final String PREFIX = "gateway.ui";
@@ -65,6 +69,7 @@ public record GatewayUiProperties(
     public GatewayUiProperties {
         basePath = normalizeBasePath(basePath);
         services = services == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(services));
+        defaultLocale = defaultLocale == null ? Locale.ENGLISH : defaultLocale;
     }
 
     /**

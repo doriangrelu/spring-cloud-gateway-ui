@@ -64,7 +64,7 @@ Requête entrante → prédicats → **toute la chaîne de filtres**, globaux et
 </picture>
 </details>
 
-Toutes ces captures ont été prises sur la [Gateway d'exemple](gateway-ui-sample). L'UI suit le thème clair ou sombre du système.
+Toutes ces captures ont été prises sur la [Gateway d'exemple](gateway-ui-sample). L'UI suit le thème clair ou sombre du système, et existe en anglais et en français : elle s'affiche dans la langue du navigateur, et le sélecteur **EN | FR** de la barre de navigation permet d'en changer.
 
 ## Démarrage rapide
 
@@ -93,6 +93,7 @@ Ouvrez ensuite `http://<votre-gateway>/gateway-ui`.
 | `gateway.ui.enabled` | `false` | Active l'UI. Désactivée, l'UI ne crée aucun bean et n'expose aucune URL. |
 | `gateway.ui.base-path` | `/gateway-ui` | Préfixe des pages et ressources de l'UI. La racine `/` est refusée. |
 | `gateway.ui.discover-services` | `true` | Déduit les services cibles à partir des URI des routes. |
+| `gateway.ui.default-locale` | `en` | Langue de l'UI (`en` ou `fr`) quand l'utilisateur n'en a pas choisi une dans l'UI et que celle de son navigateur n'est pas supportée. |
 | `gateway.ui.services.<nom>.url` | | URL du service. Les routes qui pointent vers le même schéma, hôte et port lui sont rattachées. |
 | `gateway.ui.services.<nom>.display-name` | `<nom>` | Libellé affiché. |
 | `gateway.ui.services.<nom>.route-ids` | | Routes rattachées explicitement au service. |

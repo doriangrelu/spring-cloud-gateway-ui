@@ -49,7 +49,8 @@ class FilterStepTest {
 
         assertThat(step.name()).isEqualTo("correlationIdFilter");
         assertThat(step.ordered()).isFalse();
-        assertThat(step.orderText()).isEqualTo("non ordonné");
+        assertThat(step.lambda()).isTrue();
+        assertThat(step.description()).isEqualTo(FilterStepTest.class.getName());
     }
 
     @Test
@@ -61,6 +62,6 @@ class FilterStepTest {
     }
 
     private static FilterStep ordered(final int order) {
-        return new FilterStep("Filter", "", order, true, FilterStep.Scope.ROUTE);
+        return new FilterStep("Filter", "", order, true, FilterStep.Scope.ROUTE, false);
     }
 }

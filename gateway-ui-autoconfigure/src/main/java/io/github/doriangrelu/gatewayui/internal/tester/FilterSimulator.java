@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.github.doriangrelu.gatewayui.internal.i18n.Message;
 import io.github.doriangrelu.gatewayui.internal.inspect.Definition;
 import io.github.doriangrelu.gatewayui.internal.inspect.FilterStep;
 import io.github.doriangrelu.gatewayui.internal.tester.TestResult.Simulation;
@@ -44,12 +45,6 @@ import org.springframework.web.server.ServerWebExchange;
  * fourni par {@link FilterEffects}.
  */
 class FilterSimulator {
-
-    private static final String GLOBAL_FILTERS_NOTE =
-            "Les filtres globaux (X-Forwarded-*, load balancer, métriques...) ne sont pas simulés.";
-
-    private static final String JAVA_ROUTE_NOTE =
-            "Route définie en Java (DSL) : seuls ses prédicats peuvent être évalués, ses filtres ne sont pas simulés.";
 
     private FilterSimulator() {
     }
@@ -116,12 +111,12 @@ class FilterSimulator {
         }
         final String before = state.path();
         try {
-            final String note = effect.get().apply(definition, state);
+            final Message note = effect.get().apply(definition, state);
             return new Step(definition.name(), definition.argsText(), StepStatus.APPLIED, before, state.path(), note);
         }
         catch (final RuntimeException ex) {
             return new Step(definition.name(), definition.argsText(), StepStatus.NOT_SIMULATED, null, null,
-                    "Simulation impossible : " + ex.getMessage());
+                    Message.of("sim.failed", ex.getMessage()));
         }
     }
 
@@ -129,11 +124,11 @@ class FilterSimulator {
         final boolean responseOnly = definition.name().contains("Response");
         return new Step(definition.name(), definition.argsText(),
                 responseOnly ? StepStatus.RESPONSE_ONLY : StepStatus.NOT_SIMULATED, null, null,
-                responseOnly ? "Agit sur la réponse" : "Effet non simulé");
+                Message.of(responseOnly ? "sim.responseOnly" : "sim.notSimulated"));
     }
 
     private static Step undeclared(final FilterStep described, final boolean declarative) {
-        final String note = declarative ? "Filtre personnalisé : effet non simulé" : "Route définie en Java : effet inconnu";
+        final Message note = Message.of(declarative ? "sim.customFilter" : "sim.javaRouteFilter");
         return new Step(described.name(), described.description(), StepStatus.NOT_SIMULATED, null, null, note);
     }
 
@@ -152,7 +147,7 @@ class FilterSimulator {
         final String scheme = target.getScheme() == null ? "" : target.getScheme();
         return switch (scheme) {
             case "forward" -> "forward:" + state.path() + query;
-            case "no" -> "no://op (aucun appel, la réponse est produite par les filtres)";
+            case "no" -> "no://op";
             default -> scheme + "://" + authority(target) + state.path() + query;
         };
     }
@@ -174,15 +169,17 @@ class FilterSimulator {
         return entries;
     }
 
-    private static List<String> notes(final boolean declarative, final URI target) {
-        final List<String> notes = new ArrayList<>();
+    private static List<Message> notes(final boolean declarative, final URI target) {
+        final List<Message> notes = new ArrayList<>();
         if (!declarative) {
-            notes.add(JAVA_ROUTE_NOTE);
+            notes.add(Message.of("sim.note.javaRoute"));
         }
-        notes.add(GLOBAL_FILTERS_NOTE);
+        notes.add(Message.of("sim.note.globalFilters"));
         if ("lb".equalsIgnoreCase(target.getScheme())) {
-            notes.add("URI lb:// : l'hôte final est choisi par le load balancer parmi les instances de « "
-                    + target.getHost() + " ».");
+            notes.add(Message.of("sim.note.loadBalancer", target.getHost()));
+        }
+        if ("no".equalsIgnoreCase(target.getScheme())) {
+            notes.add(Message.of("sim.note.noOp"));
         }
         return notes;
     }

@@ -3,22 +3,28 @@
 @import java.util.List
 @param UiContext ui
 @param List<FilterStep> filters
-@template.layout(ui = ui, title = "Filtres globaux", content = @`
+@template.layout(ui = ui, title = ui.message("filters.title"), content = @`
     <div class="page-head">
         <div>
-            <h1>Filtres globaux</h1>
-            <p class="muted">Appliqués à toutes les routes, intercalés avec les filtres de chaque route selon leur ordre.</p>
+            <h1>${ui.message("filters.title")}</h1>
+            <p class="muted">${ui.message("filters.intro")}</p>
         </div>
     </div>
     <div class="card">
         <table>
-            <thead><tr><th class="num">Ordre</th><th>Filtre</th><th>Classe</th></tr></thead>
+            <thead>
+            <tr>
+                <th class="num">${ui.message("filters.col.order")}</th>
+                <th>${ui.message("filters.col.filter")}</th>
+                <th>${ui.message("filters.col.class")}</th>
+            </tr>
+            </thead>
             <tbody>
             @for(FilterStep filter : filters)
                 <tr>
-                    <td class="num mono" title="${filter.orderHint()}">${filter.orderText()}</td>
+                    <td class="num mono" title="${ui.orderHint(filter)}">${ui.orderText(filter)}</td>
                     <td>${filter.name()}</td>
-                    <td class="mono muted">${filter.description()}</td>
+                    <td class="mono muted">${ui.filterDescription(filter)}</td>
                 </tr>
             @endfor
             </tbody>

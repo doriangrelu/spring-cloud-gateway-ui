@@ -31,6 +31,7 @@ gateway-ui-autoconfigure/            tout le code
   src/main/java/io/github/doriangrelu/gatewayui/
     autoconfigure/       GatewayUiAutoConfiguration, GatewayUiProperties (gateway.ui.*) : API publique
     internal/            implémentation, sans garantie de compatibilité (ADR 0008)
+      i18n/             messages FR/EN (messages_xx.properties) et clés de message (ADR 0009)
       inspect/          lecture seule de la Gateway : routes, définitions, filtres, services
       tester/           testeur : SimulatedExchange, FilterSimulator, registre FilterEffects
       web/              RouterFunction, handlers, rendu JTE
@@ -67,6 +68,7 @@ Checkstyle fait échouer le build si l'une des règles marquées ✔ n'est pas r
 - **Pas de masquage par la Gateway** : pages *et* ressources statiques passent par la `RouterFunction` de `GatewayUiRouter`. Ne servez rien via `static/` ou `META-INF/resources` : une route `Path=/**` l'intercepterait.
 - **Pas d'interférence avec l'application hôte** : pas de `ViewResolver`, et les templates restent dans le package dédié `io.github.doriangrelu.gatewayui.internal.jte`.
 - **htmx** : une requête avec `HX-Request` reçoit un fragment, une navigation classique la page complète. Chaque écran doit rester accessible par son URL.
+- **i18n** (ADR 0009) : aucun texte affiché en dur, ni dans les templates (`ui.message("clé")`) ni dans le code (`Message.of("clé", args)`). Toute clé est ajoutée dans `messages_en.properties` **et** `messages_fr.properties`, sinon le build échoue ; dans un message avec arguments, l'apostrophe s'écrit `''`.
 
 ## Ce qu'il ne faut pas faire
 

@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.github.doriangrelu.gatewayui.internal.i18n.Message;
 import io.github.doriangrelu.gatewayui.internal.inspect.GatewayInspector;
 import io.github.doriangrelu.gatewayui.internal.inspect.ServiceCatalog;
 import io.github.doriangrelu.gatewayui.internal.tester.RouteTester;
@@ -40,7 +41,7 @@ public class GatewayUiHandler {
 
     private static final MediaType HTML = new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8);
 
-    private final UiContext ui;
+    private final UiContexts contexts;
 
     private final TemplateRenderer renderer;
 
@@ -53,15 +54,15 @@ public class GatewayUiHandler {
     /**
      * Crée le handler des pages.
      *
-     * @param basePath préfixe des URL de l'UI
+     * @param contexts fabrique des contextes de rendu (chemin de l'UI, langue)
      * @param renderer moteur de templates
      * @param inspector inspecteur de la Gateway
      * @param serviceCatalog catalogue des services
      * @param routeTester testeur de routes
      */
-    public GatewayUiHandler(final String basePath, final TemplateRenderer renderer, final GatewayInspector inspector,
+    public GatewayUiHandler(final UiContexts contexts, final TemplateRenderer renderer, final GatewayInspector inspector,
             final ServiceCatalog serviceCatalog, final RouteTester routeTester) {
-        this.ui = new UiContext(basePath, "");
+        this.contexts = contexts;
         this.renderer = renderer;
         this.inspector = inspector;
         this.serviceCatalog = serviceCatalog;
@@ -75,7 +76,7 @@ public class GatewayUiHandler {
      * @return une redirection
      */
     public Mono<ServerResponse> home(final ServerRequest request) {
-        return ServerResponse.temporaryRedirect(URI.create(ui.url("/routes"))).build();
+        return ServerResponse.temporaryRedirect(URI.create(contexts.basePath() + "/routes")).build();
     }
 
     /**
@@ -86,7 +87,7 @@ public class GatewayUiHandler {
      */
     public Mono<ServerResponse> routes(final ServerRequest request) {
         final String query = request.queryParam("q").orElse("");
-        final UiContext page = ui.page("routes");
+        final UiContext page = contexts.create(request, "routes");
         final String template = isHtmx(request) ? "routesTable" : "routes";
         return inspector.routes(query)
                 .flatMap(routes -> html(template, Map.of("ui", page, "routes", routes, "query", query)));
@@ -99,11 +100,11 @@ public class GatewayUiHandler {
      * @return la page, ou une page 404 si la route n'existe pas
      */
     public Mono<ServerResponse> route(final ServerRequest request) {
-        final UiContext page = ui.page("routes");
+        final UiContext page = contexts.create(request, "routes");
         final String id = request.pathVariable("id");
         return inspector.route(id)
                 .flatMap(route -> html("route", Map.of("ui", page, "route", route, "pipeline", inspector.pipeline(route))))
-                .switchIfEmpty(Mono.defer(() -> notFound(page, "Route « " + id + " » introuvable")));
+                .switchIfEmpty(Mono.defer(() -> notFound(page, Message.of("route.notFound", id))));
     }
 
     /**
@@ -113,7 +114,7 @@ public class GatewayUiHandler {
      * @return la page
      */
     public Mono<ServerResponse> services(final ServerRequest request) {
-        final UiContext page = ui.page("services");
+        final UiContext page = contexts.create(request, "services");
         return serviceCatalog.services().flatMap(services -> html("services", Map.of("ui", page, "services", services)));
     }
 
@@ -124,7 +125,7 @@ public class GatewayUiHandler {
      * @return la page
      */
     public Mono<ServerResponse> globalFilters(final ServerRequest request) {
-        return html("globalFilters", Map.of("ui", ui.page("filters"), "filters", inspector.globalFilters()));
+        return html("globalFilters", Map.of("ui", contexts.create(request, "filters"), "filters", inspector.globalFilters()));
     }
 
     /**
@@ -136,11 +137,11 @@ public class GatewayUiHandler {
     public Mono<ServerResponse> tester(final ServerRequest request) {
         final TestRequest testRequest = TestRequest.from(request.queryParams());
         final String template = isHtmx(request) ? "testerResult" : "tester";
-        final Map<String, Object> params = testerParams(testRequest);
+        final Map<String, Object> params = testerParams(contexts.create(request, "tester"), testRequest);
         if (TestRequest.isEmpty(request.queryParams())) {
             return html(template, params);
         }
-        final String error = testRequest.validate();
+        final Message error = testRequest.validate();
         if (error != null) {
             params.put("error", error);
             return html(template, params);
@@ -151,17 +152,17 @@ public class GatewayUiHandler {
         });
     }
 
-    private Map<String, Object> testerParams(final TestRequest testRequest) {
+    private static Map<String, Object> testerParams(final UiContext page, final TestRequest testRequest) {
         // HashMap : les templates attendent des paramètres présents, même nuls
         final Map<String, Object> params = new HashMap<>();
-        params.put("ui", ui.page("tester"));
+        params.put("ui", page);
         params.put("request", testRequest);
         params.put("result", null);
         params.put("error", null);
         return params;
     }
 
-    private Mono<ServerResponse> notFound(final UiContext page, final String message) {
+    private Mono<ServerResponse> notFound(final UiContext page, final Message message) {
         return ServerResponse.status(HttpStatus.NOT_FOUND).contentType(HTML)
                 .bodyValue(renderer.render("notFound", Map.of("ui", page, "message", message)));
     }

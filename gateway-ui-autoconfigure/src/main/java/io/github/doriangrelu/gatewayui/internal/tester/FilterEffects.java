@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import io.github.doriangrelu.gatewayui.internal.i18n.Message;
 import io.github.doriangrelu.gatewayui.internal.inspect.Definition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.StringUtils;
@@ -96,67 +97,67 @@ class FilterEffects {
         return newPath.toString();
     }
 
-    private static String stripPrefix(final Definition definition, final SimulationState state) {
+    private static Message stripPrefix(final Definition definition, final SimulationState state) {
         final String parts = definition.arg("parts", 0);
         state.path(stripPrefix(state.path(), parts == null ? 1 : Integer.parseInt(parts.trim())));
         return null;
     }
 
-    private static String prefixPath(final Definition definition, final SimulationState state) {
+    private static Message prefixPath(final Definition definition, final SimulationState state) {
         state.path(expandPath(definition.arg("prefix", 0), state) + state.path());
         return null;
     }
 
-    private static String rewritePath(final Definition definition, final SimulationState state) {
+    private static Message rewritePath(final Definition definition, final SimulationState state) {
         // Le YAML impose d'écrire $\{groupe} : la Gateway le ramène à ${groupe}
         final String replacement = definition.arg("replacement", 1).replace("$\\", "$");
         state.path(Pattern.compile(definition.arg("regexp", 0)).matcher(state.path()).replaceAll(replacement));
         return null;
     }
 
-    private static String setPath(final Definition definition, final SimulationState state) {
+    private static Message setPath(final Definition definition, final SimulationState state) {
         state.path(expandPath(definition.arg("template", 0), state));
         return null;
     }
 
-    private static String addRequestHeader(final Definition definition, final SimulationState state) {
+    private static Message addRequestHeader(final Definition definition, final SimulationState state) {
         final String name = definition.arg("name", 0);
         final String value = state.expand(definition.arg("value", 1));
         state.headers().add(name, value);
-        return "En-tête ajouté : " + name + ": " + value;
+        return Message.of("sim.headerAdded", name, value);
     }
 
-    private static String setRequestHeader(final Definition definition, final SimulationState state) {
+    private static Message setRequestHeader(final Definition definition, final SimulationState state) {
         final String name = definition.arg("name", 0);
         final String value = state.expand(definition.arg("value", 1));
         state.headers().set(name, value);
-        return "En-tête positionné : " + name + ": " + value;
+        return Message.of("sim.headerSet", name, value);
     }
 
-    private static String removeRequestHeader(final Definition definition, final SimulationState state) {
+    private static Message removeRequestHeader(final Definition definition, final SimulationState state) {
         final String name = definition.arg("name", 0);
         state.headers().remove(name);
-        return "En-tête supprimé : " + name;
+        return Message.of("sim.headerRemoved", name);
     }
 
-    private static String addRequestParameter(final Definition definition, final SimulationState state) {
+    private static Message addRequestParameter(final Definition definition, final SimulationState state) {
         final String name = definition.arg("name", 0);
         final String value = state.expand(definition.arg("value", 1));
         final String parameter = encode(name) + "=" + encode(value);
         state.query(StringUtils.hasText(state.query()) ? state.query() + "&" + parameter : parameter);
-        return "Paramètre ajouté : " + name + "=" + value;
+        return Message.of("sim.paramAdded", name, value);
     }
 
-    private static String setRequestHostHeader(final Definition definition, final SimulationState state) {
+    private static Message setRequestHostHeader(final Definition definition, final SimulationState state) {
         final String host = definition.arg("host", 0);
         state.headers().set(HttpHeaders.HOST, host);
         state.preserveHost(true);
-        return "Host forcé à " + host;
+        return Message.of("sim.hostForced", host);
     }
 
-    private static String preserveHostHeader(final Definition definition, final SimulationState state) {
+    private static Message preserveHostHeader(final Definition definition, final SimulationState state) {
         state.preserveHost(true);
-        return "Le Host d'origine est transmis au service";
+        return Message.of("sim.hostPreserved");
     }
 
     private static String expandPath(final String template, final SimulationState state) {

@@ -15,6 +15,8 @@
  */
 package io.github.doriangrelu.gatewayui;
 
+import java.net.URI;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +25,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -103,7 +106,7 @@ class GatewayUiIntegrationTest {
                 .expectStatus().isOk()
                 .expectBody(String.class).value(body -> assertThat(body)
                         .contains("http://orders.test:8080/orders/42")
-                        .contains("masquée"));
+                        .contains("shadowed"));
     }
 
     @Test
@@ -142,6 +145,32 @@ class GatewayUiIntegrationTest {
                     .expectHeader().valueEquals("X-Frame-Options", "DENY")
                     .expectHeader().valueEquals("Referrer-Policy", "no-referrer");
         }
+    }
+
+    @Test
+    void uiIsInEnglishByDefault() {
+        client.get().uri("/gateway-ui/routes").exchange()
+                .expectBody(String.class).value(body -> assertThat(body)
+                        .contains("<html lang=\"en\">")
+                        .contains("Global filters"));
+    }
+
+    @Test
+    void uiFollowsTheBrowserLanguage() {
+        client.get().uri("/gateway-ui/routes").header(HttpHeaders.ACCEPT_LANGUAGE, "fr-FR,fr;q=0.9").exchange()
+                .expectBody(String.class).value(body -> assertThat(body)
+                        .contains("<html lang=\"fr\">")
+                        .contains("Filtres globaux"));
+    }
+
+    @Test
+    void languageCanBeChangedFromTheUi() {
+        // URI déjà encodée : ne pas passer par les modèles d'URI, qui ré-encoderaient les %
+        client.get().uri(URI.create("/gateway-ui/tester?path=%2Fapi%2Forders%2F1&lang=fr")).exchange()
+                .expectHeader().valueMatches(HttpHeaders.SET_COOKIE, "gateway-ui-lang=fr;.*Path=/gateway-ui.*")
+                .expectBody(String.class).value(body -> assertThat(body)
+                        .contains("Testeur de routes")
+                        .contains("href=\"/gateway-ui/tester?path=%2Fapi%2Forders%2F1&amp;lang=en\""));
     }
 
     @Test

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # Régénère les captures de docs/images, en thème clair et sombre, depuis la Gateway d'exemple.
+# Les captures sont prises en français, la langue de la documentation (paramètre lang=fr).
 #
 # Prérequis : la Gateway d'exemple tourne sur http://localhost:8080 (voir gateway-ui-sample/README.md)
 # et Chrome ou Chromium est installé.
@@ -35,8 +36,8 @@ capture() {
 }
 
 mkdir -p "$OUTPUT_DIR"
-capture routes 500 "/routes"
-capture route-detail 1310 "/routes/users"
-capture tester 1030 "/tester?method=GET&host=localhost&path=%2Fapi%2Fusers%2Flegacy%2F42"
-capture services 640 "/services"
-capture global-filters 660 "/filters"
+capture routes 500 "/routes?lang=fr"
+capture route-detail 1310 "/routes/users?lang=fr"
+capture tester 1030 "/tester?method=GET&host=localhost&path=%2Fapi%2Fusers%2Flegacy%2F42&lang=fr"
+capture services 640 "/services?lang=fr"
+capture global-filters 660 "/filters?lang=fr"

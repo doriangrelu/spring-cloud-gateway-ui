@@ -58,7 +58,7 @@ class ServiceCatalogTest {
     }
 
     private static ServiceCatalog catalog(final boolean discover, final Map<String, GatewayUiProperties.Service> services) {
-        return new ServiceCatalog(null, new GatewayUiProperties(true, null, discover, services));
+        return new ServiceCatalog(null, new GatewayUiProperties(true, null, discover, services, null));
     }
 
     private static RouteView route(final String id, final String uri) {

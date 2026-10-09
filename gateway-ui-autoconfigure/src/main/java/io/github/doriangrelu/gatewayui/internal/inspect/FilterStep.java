@@ -30,12 +30,13 @@ import org.springframework.util.ClassUtils;
  * Un filtre de la chaîne d'exécution d'une route, global ou propre à la route.
  *
  * @param name nom court du filtre ({@code StripPrefix}, {@code NettyRoutingFilter}, nom du bean pour une lambda...)
- * @param description arguments du filtre de route, ou type du filtre global
+ * @param description arguments du filtre de route, type du filtre global, ou classe qui déclare une lambda
  * @param order ordre effectif dans la chaîne
  * @param ordered {@code false} quand le filtre n'a pas d'ordre explicite (il passe alors en dernier)
  * @param scope portée du filtre
+ * @param lambda filtre global déclaré en lambda : {@code description} est la classe qui le déclare
  */
-public record FilterStep(String name, String description, int order, boolean ordered, Scope scope) {
+public record FilterStep(String name, String description, int order, boolean ordered, Scope scope, boolean lambda) {
 
     /** Format produit par {@code GatewayToStringStyler} : {@code [StripPrefix parts = 1]}. */
     private static final Pattern FACTORY_TO_STRING = Pattern.compile("^\\[(\\w+)\\s*(.*)]$", Pattern.DOTALL);
@@ -43,8 +44,8 @@ public record FilterStep(String name, String description, int order, boolean ord
     /** Distance à une borne en deçà de laquelle l'ordre est affiché relativement à elle. */
     private static final long RELATIVE_ORDER_RANGE = 1_000_000L;
 
-    /** Libellé d'un filtre de route déclaré en Java, dont on ne connaît que le type. */
-    private static final String JAVA_FILTER_NAME = "Filtre Java";
+    /** Nom d'un filtre de route déclaré en Java, dont on ne connaît que le type (terme technique, non traduit). */
+    private static final String JAVA_FILTER_NAME = "Java DSL";
 
     /**
      * Portée d'un filtre.
@@ -69,9 +70,9 @@ public record FilterStep(String name, String description, int order, boolean ord
         final Integer order = explicitOrder(filter);
         final boolean anonymous = isAnonymous(type);
         final String name = anonymous && beanName != null ? beanName : type.getSimpleName();
-        final String description = anonymous ? "Lambda déclarée dans " + declaringClassName(type) : type.getName();
+        final String description = anonymous ? declaringClassName(type) : type.getName();
         return new FilterStep(name, description, order != null ? order : Ordered.LOWEST_PRECEDENCE, order != null,
-                Scope.GLOBAL);
+                Scope.GLOBAL, anonymous);
     }
 
     /**
@@ -86,9 +87,10 @@ public record FilterStep(String name, String description, int order, boolean ord
         final GatewayFilter target = filter instanceof final OrderedGatewayFilter o ? o.getDelegate() : filter;
         final Matcher matcher = FACTORY_TO_STRING.matcher(String.valueOf(target));
         if (matcher.matches()) {
-            return new FilterStep(matcher.group(1), matcher.group(2).trim(), order, ordered, Scope.ROUTE);
+            return new FilterStep(matcher.group(1), matcher.group(2).trim(), order, ordered, Scope.ROUTE, false);
         }
-        return new FilterStep(JAVA_FILTER_NAME, ClassUtils.getUserClass(target).getName(), order, ordered, Scope.ROUTE);
+        return new FilterStep(JAVA_FILTER_NAME, ClassUtils.getUserClass(target).getName(), order, ordered, Scope.ROUTE,
+                false);
     }
 
     /**
@@ -101,25 +103,12 @@ public record FilterStep(String name, String description, int order, boolean ord
     }
 
     /**
-     * Infobulle de l'ordre : un filtre sans ordre explicite est souvent une erreur de configuration.
-     *
-     * @return le texte de l'infobulle
-     */
-    public String orderHint() {
-        return ordered ? "Ordre" : "Ni Ordered ni @Order sur la classe : exécuté en dernier. "
-                + "Un @Order posé sur la méthode @Bean est ignoré par la Gateway.";
-    }
-
-    /**
      * Ordre lisible : les valeurs proches des bornes s'écrivent relativement à elles, comme dans le code de la
-     * Gateway ({@code HIGHEST+1000}, {@code LOWEST-1}).
+     * Gateway ({@code HIGHEST+1000}, {@code LOWEST-1}). Un filtre sans ordre explicite vaut {@code LOWEST}.
      *
      * @return l'ordre mis en forme
      */
     public String orderText() {
-        if (!ordered) {
-            return "non ordonné";
-        }
         final long fromHighest = (long) order - Ordered.HIGHEST_PRECEDENCE;
         final long fromLowest = (long) Ordered.LOWEST_PRECEDENCE - order;
         if (fromHighest < RELATIVE_ORDER_RANGE) {

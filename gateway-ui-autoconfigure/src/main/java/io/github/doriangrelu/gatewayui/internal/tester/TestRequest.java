@@ -22,6 +22,7 @@ import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import io.github.doriangrelu.gatewayui.internal.i18n.Message;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.util.MultiValueMap;
@@ -88,15 +89,15 @@ public record TestRequest(String method, String pathAndQuery, String host, Strin
      *
      * @return le message d'erreur à afficher, ou {@code null} si la requête est valide
      */
-    public String validate() {
+    public Message validate() {
         if (!HTTP_METHOD.matcher(method).matches()) {
-            return "Méthode HTTP invalide : " + method;
+            return Message.of("tester.error.method", method);
         }
         try {
-            return uri().getHost() == null ? "Hôte invalide : " + host : null;
+            return uri().getHost() == null ? Message.of("tester.error.host", host) : null;
         }
         catch (final IllegalArgumentException ex) {
-            return "Chemin ou hôte invalide : " + ex.getMessage();
+            return Message.of("tester.error.invalid", ex.getMessage());
         }
     }
 

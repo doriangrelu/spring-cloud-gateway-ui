@@ -1,4 +1,5 @@
 @import io.github.doriangrelu.gatewayui.internal.web.UiContext
+@import io.github.doriangrelu.gatewayui.internal.i18n.Message
 @import io.github.doriangrelu.gatewayui.internal.tester.TestRequest
 @import io.github.doriangrelu.gatewayui.internal.tester.TestResult
 @import io.github.doriangrelu.gatewayui.internal.tester.TestResult.Evaluation
@@ -8,19 +9,19 @@
 @param UiContext ui
 @param TestRequest request
 @param TestResult result
-@param String error
+@param Message error
 <div id="tester-result">
     @if(error != null)
-        <div class="alert alert-error">${error}</div>
+        <div class="alert alert-error">${ui.message(error)}</div>
     @elseif(result != null)
         @if(result.selectedRouteId() == null)
             <div class="verdict verdict-none">
-                <span class="verdict-title">Aucune route ne correspond</span>
-                <span class="muted">La Gateway répondrait 404 à <span class="mono">${request.method()} ${request.pathAndQuery()}</span>.</span>
+                <span class="verdict-title">${ui.message("result.none")}</span>
+                <span class="muted">${ui.message("result.none.detail")} <span class="mono">${request.method()} ${request.pathAndQuery()}</span>.</span>
             </div>
         @else
             <div class="verdict verdict-match">
-                <span class="verdict-title">Route <a class="route-link" href="${ui.routeUrl(result.selectedRouteId())}">${result.selectedRouteId()}</a></span>
+                <span class="verdict-title">${ui.message("result.route")} <a class="route-link" href="${ui.routeUrl(result.selectedRouteId())}">${result.selectedRouteId()}</a></span>
                 <span class="verdict-call mono">
                     <span class="method">${request.method()}</span> ${result.simulation().targetUrl()}
                 </span>
@@ -28,9 +29,9 @@
 
             <div class="grid grid-2">
                 <section class="card">
-                    <h2>Transformations</h2>
+                    <h2>${ui.message("result.transformations")}</h2>
                     @if(result.simulation().steps().isEmpty())
-                        <p class="empty">Aucun filtre sur cette route : le chemin est transmis tel quel.</p>
+                        <p class="empty">${ui.message("result.noFilter")}</p>
                     @else
                         <ol class="sim-steps">
                             @for(Step step : result.simulation().steps())
@@ -42,15 +43,15 @@
                                     @if(step.changedPath())
                                         <div class="sim-path mono"><s>${step.pathBefore()}</s> → <strong>${step.pathAfter()}</strong></div>
                                     @elseif(step.status() == StepStatus.APPLIED && step.pathBefore() != null && step.note() == null)
-                                        <div class="sim-path mono muted">${step.pathAfter()} (inchangé)</div>
+                                        <div class="sim-path mono muted">${step.pathAfter()} ${ui.message("result.unchanged")}</div>
                                     @endif
-                                    @if(step.note() != null)<div class="sim-note">${step.note()}</div>@endif
+                                    @if(step.note() != null)<div class="sim-note">${ui.message(step.note())}</div>@endif
                                 </li>
                             @endfor
                         </ol>
                     @endif
                     @if(!result.simulation().uriVariables().isEmpty())
-                        <h3>Variables extraites</h3>
+                        <h3>${ui.message("result.variables")}</h3>
                         <dl class="kv">
                             @for(var variable : result.simulation().uriVariables().entrySet())
                                 <dt class="mono">${variable.getKey()}</dt><dd class="mono">${variable.getValue()}</dd>
@@ -60,7 +61,7 @@
                 </section>
 
                 <section class="card">
-                    <h2>Requête transmise</h2>
+                    <h2>${ui.message("result.forwarded")}</h2>
                     <p class="mono target">${request.method()} ${result.simulation().targetUrl()}</p>
                     <dl class="kv">
                         @for(var header : result.simulation().headers())
@@ -68,8 +69,8 @@
                         @endfor
                     </dl>
                     <ul class="notes">
-                        @for(String note : result.simulation().notes())
-                            <li>${note}</li>
+                        @for(Message note : result.simulation().notes())
+                            <li>${ui.message(note)}</li>
                         @endfor
                     </ul>
                 </section>
@@ -77,9 +78,16 @@
         @endif
 
         <section class="card">
-            <h2>Évaluation des routes</h2>
+            <h2>${ui.message("result.evaluation")}</h2>
             <table>
-                <thead><tr><th class="num">Ordre</th><th>Route</th><th>Résultat</th><th>Prédicat</th></tr></thead>
+                <thead>
+                <tr>
+                    <th class="num">${ui.message("result.col.order")}</th>
+                    <th>${ui.message("result.col.route")}</th>
+                    <th>${ui.message("result.col.outcome")}</th>
+                    <th>${ui.message("result.col.predicate")}</th>
+                </tr>
+                </thead>
                 <tbody>
                 @for(Evaluation evaluation : result.evaluations())
                     <tr class="${evaluation.selected() ? "row-selected" : ""}">
@@ -87,13 +95,13 @@
                         <td><a class="route-link" href="${ui.routeUrl(evaluation.routeId())}">${evaluation.routeId()}</a></td>
                         <td>
                             @if(evaluation.selected())
-                                <span class="chip chip-match">retenue</span>
+                                <span class="chip chip-match">${ui.message("result.selected")}</span>
                             @elseif(evaluation.shadowed())
-                                <span class="chip chip-shadowed" title="Correspond, mais une route évaluée avant a été retenue">masquée</span>
+                                <span class="chip chip-shadowed" title="${ui.message("result.shadowed.title")}">${ui.message("result.shadowed")}</span>
                             @elseif(evaluation.outcome() == Outcome.ERROR)
-                                <span class="chip chip-error" title="${evaluation.error()}">erreur</span>
+                                <span class="chip chip-error" title="${evaluation.error()}">${ui.message("result.error")}</span>
                             @else
-                                <span class="chip">ne correspond pas</span>
+                                <span class="chip">${ui.message("result.noMatch")}</span>
                             @endif
                         </td>
                         <td class="mono predicate">${evaluation.predicate()}</td>
@@ -103,6 +111,6 @@
             </table>
         </section>
     @else
-        <p class="placeholder muted">Saisis un chemin pour voir quelle route le prend en charge.</p>
+        <p class="placeholder muted">${ui.message("tester.placeholder")}</p>
     @endif
 </div>

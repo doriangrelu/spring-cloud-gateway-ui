@@ -18,6 +18,8 @@ package io.github.doriangrelu.gatewayui.internal.tester;
 import java.util.List;
 import java.util.Map;
 
+import io.github.doriangrelu.gatewayui.internal.i18n.Message;
+
 /**
  * Résultat du testeur : évaluation de chaque route puis simulation de la route retenue.
  *
@@ -77,9 +79,9 @@ public record TestResult(TestRequest request, String requestUri, List<Evaluation
      * @param status issue de la simulation
      * @param pathBefore chemin avant le filtre, {@code null} si le filtre n'a pas été rejoué
      * @param pathAfter chemin après le filtre, {@code null} si le filtre n'a pas été rejoué
-     * @param note effet du filtre sur les en-têtes ou les paramètres, ou raison de l'absence de simulation
+     * @param note effet du filtre sur les en-têtes ou les paramètres, ou raison de l'absence de simulation ; peut être {@code null}
      */
-    public record Step(String filter, String args, StepStatus status, String pathBefore, String pathAfter, String note) {
+    public record Step(String filter, String args, StepStatus status, String pathBefore, String pathAfter, Message note) {
 
         /**
          * Indique si le filtre a modifié le chemin.
@@ -102,6 +104,6 @@ public record TestResult(TestRequest request, String requestUri, List<Evaluation
      * @param notes limites de la simulation à signaler
      */
     public record Simulation(Map<String, String> uriVariables, List<Step> steps, String targetUrl,
-            List<Map.Entry<String, String>> headers, boolean declarative, List<String> notes) {
+            List<Map.Entry<String, String>> headers, boolean declarative, List<Message> notes) {
     }
 }

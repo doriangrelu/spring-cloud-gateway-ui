@@ -15,6 +15,7 @@
  */
 package io.github.doriangrelu.gatewayui.internal.tester;
 
+import io.github.doriangrelu.gatewayui.internal.i18n.Message;
 import io.github.doriangrelu.gatewayui.internal.inspect.Definition;
 
 /**
@@ -30,5 +31,5 @@ interface FilterEffect {
      * @param state requête en cours de transformation
      * @return une note décrivant l'effet, ou {@code null} si le changement de chemin suffit à le décrire
      */
-    String apply(Definition definition, SimulationState state);
+    Message apply(Definition definition, SimulationState state);
 }

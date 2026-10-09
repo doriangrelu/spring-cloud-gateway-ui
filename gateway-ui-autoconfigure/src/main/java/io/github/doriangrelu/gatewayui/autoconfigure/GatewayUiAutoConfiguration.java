@@ -24,6 +24,7 @@ import io.github.doriangrelu.gatewayui.internal.tester.RouteTester;
 import io.github.doriangrelu.gatewayui.internal.web.GatewayUiHandler;
 import io.github.doriangrelu.gatewayui.internal.web.GatewayUiRouter;
 import io.github.doriangrelu.gatewayui.internal.web.TemplateRenderer;
+import io.github.doriangrelu.gatewayui.internal.web.UiContexts;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -111,8 +112,9 @@ public class GatewayUiAutoConfiguration {
     @Bean
     public RouterFunction<ServerResponse> gatewayUiRouterFunction(final GatewayUiProperties properties,
             final GatewayInspector inspector, final ServiceCatalog serviceCatalog, final RouteTester routeTester) {
-        final GatewayUiHandler handler = new GatewayUiHandler(properties.basePath(), new TemplateRenderer(), inspector,
-                serviceCatalog, routeTester);
+        final UiContexts contexts = new UiContexts(properties.basePath(), properties.defaultLocale());
+        final GatewayUiHandler handler = new GatewayUiHandler(contexts, new TemplateRenderer(), inspector, serviceCatalog,
+                routeTester);
         return GatewayUiRouter.create(properties.basePath(), handler);
     }
 }

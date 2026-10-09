@@ -5,11 +5,17 @@
 @param List<RouteView> routes
 <div id="routes-table" class="card">
     @if(routes.isEmpty())
-        <p class="empty">Aucune route.</p>
+        <p class="empty">${ui.message("routes.empty")}</p>
     @else
         <table>
             <thead>
-            <tr><th class="num">Ordre</th><th>Route</th><th>Prédicats</th><th>Cible</th><th class="num">Filtres</th></tr>
+            <tr>
+                <th class="num">${ui.message("routes.col.order")}</th>
+                <th>${ui.message("routes.col.route")}</th>
+                <th>${ui.message("routes.col.predicates")}</th>
+                <th>${ui.message("routes.col.target")}</th>
+                <th class="num">${ui.message("routes.col.filters")}</th>
+            </tr>
             </thead>
             <tbody>
             @for(RouteView route : routes)
@@ -17,7 +23,7 @@
                     <td class="num mono">${route.order()}</td>
                     <td>
                         <a class="route-link" href="${ui.routeUrl(route.id())}">${route.id()}</a>
-                        @if(!route.declarative())<span class="badge badge-java" title="Route déclarée en Java (DSL)">Java</span>@endif
+                        @if(!route.declarative())<span class="badge badge-java" title="${ui.message("routes.java.title")}">${ui.message("routes.java")}</span>@endif
                     </td>
                     <td class="mono predicate">${route.predicateSummary()}</td>
                     <td class="mono">${route.uri().toString()}</td>

@@ -15,16 +15,27 @@
  */
 package io.github.doriangrelu.gatewayui.internal.web;
 
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Locale;
+
+import io.github.doriangrelu.gatewayui.internal.i18n.Message;
+import io.github.doriangrelu.gatewayui.internal.i18n.Messages;
+import io.github.doriangrelu.gatewayui.internal.inspect.FilterStep;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
- * Données communes à toutes les pages : construction des URL de l'UI et onglet actif de la navigation.
+ * Données communes à toutes les pages : URL de l'UI, onglet actif, langue et messages traduits.
  *
  * @param basePath préfixe des URL de l'UI
  * @param page onglet actif ({@code routes}, {@code services}, {@code filters} ou {@code tester})
+ * @param locale langue de la page
+ * @param messages messages de l'UI
+ * @param requestUri URI de la page affichée, pour construire les liens du sélecteur de langue
  */
-public record UiContext(String basePath, String page) {
+public record UiContext(String basePath, String page, Locale locale, Messages messages, URI requestUri) {
 
     /**
      * URL d'une page de l'UI.
@@ -67,12 +78,86 @@ public record UiContext(String basePath, String page) {
     }
 
     /**
-     * Même contexte pour un autre onglet.
+     * Message traduit dans la langue de la page.
      *
-     * @param newPage onglet actif
-     * @return le nouveau contexte
+     * @param key clé du message
+     * @param args arguments du message
+     * @return le texte
      */
-    UiContext page(final String newPage) {
-        return new UiContext(basePath, newPage);
+    public String message(final String key, final Object... args) {
+        return messages.text(locale, key, args);
+    }
+
+    /**
+     * Message produit par l'implémentation, traduit dans la langue de la page.
+     *
+     * @param message message à traduire
+     * @return le texte
+     */
+    public String message(final Message message) {
+        return messages.text(locale, message);
+    }
+
+    /**
+     * Code de la langue de la page, pour l'attribut {@code lang} du document.
+     *
+     * @return le code ISO de la langue ({@code en}, {@code fr})
+     */
+    public String lang() {
+        return locale.getLanguage();
+    }
+
+    /**
+     * Langues proposées par le sélecteur.
+     *
+     * @return les langues supportées
+     */
+    public List<Locale> languages() {
+        return Messages.SUPPORTED;
+    }
+
+    /**
+     * URL de la page courante dans une autre langue : mêmes paramètres, langue remplacée.
+     *
+     * @param language langue cible
+     * @return l'URL relative de la page
+     */
+    public String languageUrl(final Locale language) {
+        return UriComponentsBuilder.fromUri(requestUri)
+                .scheme(null).host(null).port(-1)
+                .replaceQueryParam(UiLocaleResolver.PARAMETER, language.getLanguage())
+                // Les paramètres de la page sont déjà encodés (chemins du testeur) : ne pas les ré-encoder
+                .build(true)
+                .toUriString();
+    }
+
+    /**
+     * Ordre affiché d'un filtre.
+     *
+     * @param step filtre
+     * @return l'ordre, ou la mention « non ordonné »
+     */
+    public String orderText(final FilterStep step) {
+        return step.ordered() ? step.orderText() : message("order.unordered");
+    }
+
+    /**
+     * Infobulle de l'ordre d'un filtre : un filtre sans ordre explicite est souvent une erreur de configuration.
+     *
+     * @param step filtre
+     * @return le texte de l'infobulle
+     */
+    public String orderHint(final FilterStep step) {
+        return message(step.ordered() ? "order.title" : "order.unorderedHint");
+    }
+
+    /**
+     * Description d'un filtre : ses arguments ou son type, ou la classe qui déclare une lambda.
+     *
+     * @param step filtre
+     * @return la description
+     */
+    public String filterDescription(final FilterStep step) {
+        return step.lambda() ? message("filter.lambdaIn", step.description()) : step.description();
     }
 }
