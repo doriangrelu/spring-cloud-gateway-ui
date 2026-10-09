@@ -6,6 +6,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-09
+
+Première version stable : l'API publique est définie et suit le versionnage sémantique ([ADR 0008](docs/adr/0008-api-publique-et-compatibilite.md)).
+
 ### Ajouté
 
 - UI disponible en anglais et en français ([ADR 0009](docs/adr/0009-internationalisation.md)) : langue du navigateur par défaut, sélecteur **EN | FR** dans la barre de navigation (choix mémorisé), et nouvelle propriété `gateway.ui.default-locale` (`en` par défaut).
@@ -34,5 +38,6 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 - Testeur de routes : route retenue, routes masquées, simulation de `StripPrefix`, `PrefixPath`, `RewritePath`, `SetPath`, `AddRequestHeader`, `SetRequestHeader`, `RemoveRequestHeader`, `AddRequestParameter`, `SetRequestHostHeader` et `PreserveHostHeader`, sans émettre de requête.
 - Thèmes clair et sombre, affichage adapté au mobile.
 
-[Unreleased]: https://github.com/doriangrelu/spring-cloud-gateway-ui/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/doriangrelu/spring-cloud-gateway-ui/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/doriangrelu/spring-cloud-gateway-ui/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/doriangrelu/spring-cloud-gateway-ui/releases/tag/v0.1.0

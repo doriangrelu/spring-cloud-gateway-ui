@@ -6,17 +6,13 @@ Cette roadmap donne une intention, pas un engagement de dates.
 
 ## Publié
 
+### 1.0.0 (2026-10-09) : stabilisation
+API publique définie et politique de compatibilité, UI en français et en anglais, sélecteur de thème, en-têtes de sécurité et guide de protection de l'UI, décisions fondatrices tracées dans des ADR.
+
 ### 0.1.0 (2026-10-09)
 Routes, détail d'une route avec sa chaîne de filtres, services, filtres globaux, testeur de routes par simulation.
 
 ## Prochaines versions
-
-### 1.0.0 : stabilisation
-- API publique définie et politique de compatibilité : ce qui est garanti d'une version à l'autre, et ce qui reste interne
-- UI disponible en français et en anglais
-- Protection de l'UI : intégration avec Spring Security et en-têtes de sécurité
-- Décisions fondatrices tracées dans des ADR
-- Une version candidate `1.0.0-RC1`, validée sur une Gateway réelle avant la version finale
 
 ### 1.1.0 : éditeur graphique de routes et support de WebMVC
 - Support de Spring Cloud Gateway Server WebMVC, en plus de WebFlux (voir [ADR 0001](adr/0001-gateway-server-webflux.md))

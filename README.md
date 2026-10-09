@@ -183,7 +183,7 @@ Le client `gateway-ui` doit déclarer `https://<votre-gateway>/login/oauth2/code
 | Gateway UI | Java | Spring Boot | Spring Cloud | Gateway |
 |---|---|---|---|---|
 | 0.1.x | 25+ | 4.0.x | 2025.1.x | Server WebFlux 5.0.x |
-| 1.0.x *(à venir)* | 25+ | 4.0.x | 2025.1.x | Server WebFlux 5.0.x |
+| 1.0.x | 25+ | 4.0.x | 2025.1.x | Server WebFlux 5.0.x |
 
 La variante **Server WebMVC** de Spring Cloud Gateway n'est pas encore supportée : elle est prévue pour la 1.1.0 (voir la [roadmap](docs/roadmap.md)).
 
