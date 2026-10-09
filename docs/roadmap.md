@@ -14,14 +14,14 @@ Routes, détail d'une route avec sa chaîne de filtres, services, filtres globau
 
 ## Prochaines versions
 
-### 1.1.0 : éditeur graphique de routes et support de WebMVC
-- Support de Spring Cloud Gateway Server WebMVC, en plus de WebFlux (voir [ADR 0001](adr/0001-gateway-server-webflux.md))
+### 1.1.0 : éditeur graphique de routes
 - Canevas visuel prédicats → filtres → cible, préchargé avec les routes de la Gateway
 - Formulaires générés à partir des fabriques de la Gateway, filtres maison compris
 - Génération du YAML à copier dans la configuration : l'éditeur ne modifie jamais la Gateway
 - Test de la route éditée avant export
 
-### 1.2.0 : appels réels et authentification
+### 1.2.0 : support de WebMVC, appels réels et authentification
+- Support de Spring Cloud Gateway Server WebMVC, en plus de WebFlux (voir [ADR 0001](adr/0001-gateway-server-webflux.md))
 - Mode « appel réel » du testeur, désactivé par défaut
 - Adaptateurs d'authentification : OAuth2 (authorization code, client credentials), Basic, token statique
 
