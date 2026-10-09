@@ -1,11 +1,19 @@
 name: Release
 
 # Publication sur Maven Central et création de la release GitHub au push d'un tag vX.Y.Z.
+# Lancé à la main (workflow_dispatch), le workflow fait un essai à blanc : build, jars sources et
+# javadoc, signature GPG avec les vrais secrets, calcul de la version suivante, sans rien publier.
 # Procédure complète : RELEASING.md
 
 on:
   push:
     tags: [ 'v[0-9]+.[0-9]+.[0-9]+*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version d'essai (rien n'est publié)"
+        required: true
+        default: 9.9.9
 
 permissions:
   contents: write
@@ -14,9 +22,12 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+
 jobs:
   release:
-    name: Publish ${{ github.ref_name }}
+    name: ${{ github.event_name == 'workflow_dispatch' && 'Dry run' || 'Publish' }} ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
     runs-on: ubuntu-latest
     # Environnement GitHub qui porte les secrets de publication
     environment: spring-cloud-gateway-ui-action
@@ -52,11 +63,27 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-      - name: Resolve version from tag
+      - name: Resolve version
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then version="$INPUT_VERSION"; else version="${GITHUB_REF_NAME#v}"; fi
+          # Une version finale (X.Y.Z) déclenche le passage de main à la version SNAPSHOT suivante
+          if [[ "$version" =~ ^([0-9]+)\.([0-9]+)\.[0-9]+$ ]]; then
+            final=true
+            next="${BASH_REMATCH[1]}.$((BASH_REMATCH[2] + 1)).0-SNAPSHOT"
+          else
+            final=false
+            next=""
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "final=$final" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "Version $version (finale : $final, suivante : ${next:-aucune})"
 
       - name: Check changelog entry
+        if: env.DRY_RUN != 'true'
         run: |
           if ! grep -q "^## \[${{ steps.version.outputs.version }}\]" CHANGELOG.md; then
             echo "::error::CHANGELOG.md n'a pas de section ## [${{ steps.version.outputs.version }}]"
@@ -69,7 +96,18 @@ jobs:
           -DnewVersion=${{ steps.version.outputs.version }}
           -DgenerateBackupPoms=false -DprocessAllModules=true
 
+      - name: Build and sign (dry run)
+        if: env.DRY_RUN == 'true'
+        run: |
+          ./mvnw -B -ntp -P release -pl '!gateway-ui-sample' verify
+          echo "Artefacts signés :"
+          find . -path '*/target/*' -name '*.asc' -printf '  %P\n' | sort
+          test -n "$(find . -path '*/target/*' -name '*.jar.asc')"
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
       - name: Build, sign and publish to Maven Central
+        if: env.DRY_RUN != 'true'
         run: ./mvnw -B -ntp -P release -pl '!gateway-ui-sample' deploy
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
@@ -77,6 +115,7 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Extract release notes
+        if: env.DRY_RUN != 'true'
         run: |
           awk -v header="## [${{ steps.version.outputs.version }}]" '
             index($0, header) == 1 { found = 1; next }
@@ -86,6 +125,36 @@ jobs:
           cat release-notes.md
 
       - name: Create GitHub release
+        if: env.DRY_RUN != 'true'
         run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
+
+      # Après une version finale, main passe à la version SNAPSHOT suivante.
+      # Uniquement si main est encore sur la SNAPSHOT de la version publiée : un passage déjà fait à la main est conservé.
+      # En essai à blanc, le commit est préparé mais pas poussé.
+      - name: Prepare next development version
+        if: steps.version.outputs.final == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          git reset -q --hard
+          git fetch -q origin main
+          git checkout -q -B main origin/main
+          current=$(./mvnw -B -ntp -q help:evaluate -Dexpression=project.version -DforceStdout)
+          if [ "$current" != "$VERSION-SNAPSHOT" ]; then
+            echo "::notice::main est en $current (attendu : $VERSION-SNAPSHOT) : version laissée telle quelle"
+            exit 0
+          fi
+          ./mvnw -B -ntp org.codehaus.mojo:versions-maven-plugin:2.22.0:set \
+            -DnewVersion="$NEXT" -DgenerateBackupPoms=false -DprocessAllModules=true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -am "build: passage en $NEXT"
+          git show --stat HEAD
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::notice::Essai à blanc : commit « build: passage en $NEXT » préparé mais non poussé"
+          else
+            git push origin main
+          fi

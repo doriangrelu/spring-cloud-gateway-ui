@@ -57,6 +57,14 @@ Exemple pour la version `0.1.0`.
 
 **1. Vérifier que `main` est vert** dans la CI.
 
+**Puis lancer un essai à blanc**, surtout si le workflow, les secrets ou les actions GitHub ont changé depuis la dernière release. Dans l'onglet *Actions*, choisissez le workflow *Release*, puis *Run workflow*, et saisissez la version à venir. Ou, avec le CLI GitHub :
+
+```bash
+gh workflow run release.yml -f version=0.1.0
+```
+
+L'essai à blanc construit les artefacts, les signe avec les vrais secrets et prépare le passage de `main` à la version SNAPSHOT suivante, **sans rien publier ni pousser** : ni Maven Central, ni tag, ni release GitHub, ni commit.
+
 **2. Mettre à jour le changelog.** Dans [CHANGELOG.md](CHANGELOG.md), renommez la section `[Unreleased]` en version datée, et ajoutez une section `[Unreleased]` vide au-dessus :
 
 ```markdown
@@ -98,18 +106,17 @@ git push origin main v0.1.0
 3. le build complet, avec licences, Checkstyle et tests ;
 4. la création des jars sources et javadoc, la signature GPG et l'envoi sur Central ;
 5. l'attente de la publication effective sur Central (`waitUntil=published`, en général 10 à 30 minutes) ;
-6. la création de la **release GitHub**, dont les notes sont extraites de la section du changelog.
+6. la création de la **release GitHub**, dont les notes sont extraites de la section du changelog ;
+7. pour une version finale uniquement, le passage de `main` à la version mineure suivante : un commit `build: passage en 0.2.0-SNAPSHOT` est poussé directement sur `main`.
 
 Les artefacts apparaissent sur [central.sonatype.com](https://central.sonatype.com/namespace/io.github.doriangrelu) dès la fin du workflow. Leur indexation par la recherche Maven peut prendre quelques heures de plus.
 
-**6. Préparer la suite.** Si la version suivante change de mineure, passez les POM en `0.2.0-SNAPSHOT` :
+**6. Récupérer le passage en SNAPSHOT** avec un `git pull`. Le workflow ne le fait que si `main` est encore sur la SNAPSHOT de la version publiée (`0.1.0-SNAPSHOT` ici) : une version déjà ajustée à la main est conservée. Il n'y a aucun passage après une version de pré-release (`1.0.0-RC1`, `1.1.0-M1`) : `main` reste sur la SNAPSHOT en cours.
+
+Pour préparer une version de correctif plutôt que la mineure suivante, ajustez la version à la main :
 
 ```bash
-./mvnw versions:set -DnewVersion=0.2.0-SNAPSHOT -DgenerateBackupPoms=false -DprocessAllModules=true
-```
-
-```bash
-git commit -am "build: 0.2.0-SNAPSHOT"
+./mvnw versions:set -DnewVersion=0.1.1-SNAPSHOT -DgenerateBackupPoms=false -DprocessAllModules=true
 ```
 
 ## Choisir le numéro de version
@@ -133,7 +140,9 @@ Une nouvelle génération de Spring Boot ou Spring Cloud qui casse la compatibil
 | Validation Central : *Missing javadoc/sources* | Le profil `release` n'a pas été activé (`-P release`). |
 | Échec après publication | Une version publiée sur Central est **définitive** : elle ne peut être ni supprimée ni republiée. Corrigez et publiez la version suivante. |
 
-Le profil `release` se vérifie en local sans signer ni publier :
+Pour diagnostiquer un problème de secrets ou de signature sans risque, lancez un essai à blanc (voir [Publier](#publier)).
+
+Le profil `release` se vérifie aussi en local, sans signer ni publier :
 
 ```bash
 ./mvnw -P release -pl '!gateway-ui-sample' -Dgpg.skip=true verify
