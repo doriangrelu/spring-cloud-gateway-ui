@@ -49,7 +49,7 @@ Dans *Settings → Secrets and variables → Actions* du dépôt :
 | `GPG_PRIVATE_KEY` | Clé privée exportée en ASCII (`-----BEGIN PGP PRIVATE KEY BLOCK-----` ...) |
 | `GPG_PASSPHRASE` | Passphrase de la clé |
 
-Le workflow tourne dans l'environnement GitHub `maven-central`, créé automatiquement au premier lancement. Vous pouvez y ajouter une règle de protection (*Required reviewers*) pour valider chaque publication à la main.
+Le workflow tourne dans l'environnement GitHub `spring-cloud-gateway-ui-action` : les secrets peuvent être déclarés au niveau du dépôt ou de cet environnement. Vous pouvez y ajouter une règle de protection (*Required reviewers*) pour valider chaque publication à la main. Le workflow vérifie la présence des 4 secrets avant toute autre étape.
 
 ## Publier
 

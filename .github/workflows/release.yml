@@ -18,8 +18,25 @@ jobs:
   release:
     name: Publish ${{ github.ref_name }}
     runs-on: ubuntu-latest
-    environment: maven-central
+    # Environnement GitHub qui porte les secrets de publication
+    environment: spring-cloud-gateway-ui-action
     steps:
+      - name: Check publishing secrets
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          missing=""
+          for name in MAVEN_CENTRAL_USERNAME MAVEN_CENTRAL_PASSWORD GPG_PRIVATE_KEY GPG_PASSPHRASE; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Secrets absents ou vides :$missing (secrets du dépôt ou de l'environnement spring-cloud-gateway-ui-action)"
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v5
 
