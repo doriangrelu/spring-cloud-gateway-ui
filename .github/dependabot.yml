@@ -9,6 +9,14 @@ updates:
         patterns: [ "org.springframework*" ]
       maven-plugins:
         patterns: [ "org.apache.maven.plugins:*", "org.codehaus.mojo:*", "com.mycila:*", "org.sonatype.central:*" ]
+    ignore:
+      # Spring Boot suit la génération supportée par Spring Cloud : 4.0.x pour Spring Cloud 2025.1.
+      # La montée de génération se fait à la main, avec la nouvelle version GA de Spring Cloud.
+      - dependency-name: "org.springframework.boot:*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+      # Migration majeure d'htmx à décider dans un ADR (issue #10)
+      - dependency-name: "org.webjars.npm:htmx.org"
+        update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: github-actions
     directory: /
