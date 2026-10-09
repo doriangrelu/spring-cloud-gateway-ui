@@ -1,0 +1,15 @@
+Gateway UI
+Copyright 2026 the original author or authors.
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product depends on, without bundling, the following third-party software:
+
+- jte (https://jte.gg), licensed under the Apache License, Version 2.0.
+- htmx (https://htmx.org), distributed as the org.webjars.npm:htmx.org webjar,
+  licensed under the Zero-Clause BSD License.
+- Spring Boot and Spring Cloud Gateway (https://spring.io), licensed under the
+  Apache License, Version 2.0.
+
+Spring, Spring Boot and Spring Cloud are trademarks of Broadcom Inc. and/or its
+subsidiaries. This project is not affiliated with or endorsed by Broadcom.

@@ -5,16 +5,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>dev.gatewayui</groupId>
+        <groupId>io.github.doriangrelu</groupId>
         <artifactId>gateway-ui-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>gateway-ui-autoconfigure</artifactId>
     <name>Gateway UI - Auto-configuration</name>
+    <description>Auto-configuration, introspection and pages of the Gateway UI.</description>
 
     <properties>
-        <jte.package>dev.gatewayui.jte</jte.package>
+        <jte.package>io.github.doriangrelu.gatewayui.jte</jte.package>
     </properties>
 
     <dependencies>
@@ -76,6 +77,7 @@
                     <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
                     <contentType>Html</contentType>
                     <packageName>${jte.package}</packageName>
+                    <trimControlStructures>true</trimControlStructures>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -84,6 +86,14 @@
                         <version>${jte.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <!-- Classes générées par JTE à partir des templates : détail d'implémentation -->
+                    <sourcepath>${project.build.sourceDirectory}</sourcepath>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

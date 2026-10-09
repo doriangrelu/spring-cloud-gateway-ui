@@ -1,0 +1,122 @@
+/*
+ * Copyright 2026 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.github.doriangrelu.gatewayui.autoconfigure;
+
+import java.util.List;
+import java.util.Map;
+
+import io.github.doriangrelu.gatewayui.inspect.GatewayInspector;
+import io.github.doriangrelu.gatewayui.inspect.ServiceCatalog;
+import io.github.doriangrelu.gatewayui.tester.RouteTester;
+import io.github.doriangrelu.gatewayui.web.GatewayUiHandler;
+import io.github.doriangrelu.gatewayui.web.GatewayUiRouter;
+import io.github.doriangrelu.gatewayui.web.TemplateRenderer;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.gateway.config.GatewayAutoConfiguration;
+import org.springframework.cloud.gateway.config.GatewayProperties;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
+import org.springframework.cloud.gateway.route.RouteLocator;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.ServerResponse;
+
+/**
+ * Auto-configuration de l'UI Gateway.
+ *
+ * <p>Rien n'est enregistré tant que {@code gateway.ui.enabled} ne vaut pas {@code true} : désactivée, l'UI n'expose
+ * aucune URL et ne charge aucun bean. Elle n'est active que dans une application réactive qui embarque Spring Cloud
+ * Gateway Server WebFlux.
+ *
+ * <p>Les beans d'introspection ({@link GatewayInspector}, {@link ServiceCatalog}, {@link RouteTester}) peuvent être
+ * remplacés en déclarant un bean du même type.
+ */
+@AutoConfiguration(after = GatewayAutoConfiguration.class)
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
+@ConditionalOnClass({ RouteLocator.class, RouterFunction.class })
+@ConditionalOnProperty(prefix = GatewayUiProperties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnBean({ RouteLocator.class, RouteDefinitionLocator.class })
+@EnableConfigurationProperties(GatewayUiProperties.class)
+public class GatewayUiAutoConfiguration {
+
+    /**
+     * Lecture de la configuration effective de la Gateway.
+     *
+     * @param routeLocator routes effectives (le locator principal, mis en cache par la Gateway)
+     * @param routeDefinitionLocator définitions des routes déclaratives
+     * @param globalFilters filtres globaux, dans l'ordre où la Gateway les reçoit
+     * @param globalFilterBeans filtres globaux indexés par nom de bean, pour nommer les lambdas
+     * @param gatewayProperties configuration de la Gateway, pour les {@code default-filters}
+     * @return l'inspecteur de la Gateway
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public GatewayInspector gatewayUiInspector(final RouteLocator routeLocator,
+            final RouteDefinitionLocator routeDefinitionLocator, final List<GlobalFilter> globalFilters,
+            final Map<String, GlobalFilter> globalFilterBeans, final ObjectProvider<GatewayProperties> gatewayProperties) {
+        return new GatewayInspector(routeLocator, routeDefinitionLocator, globalFilters, globalFilterBeans,
+                gatewayProperties.getIfAvailable());
+    }
+
+    /**
+     * Regroupement des routes par service cible.
+     *
+     * @param inspector inspecteur de la Gateway
+     * @param properties configuration de l'UI
+     * @return le catalogue des services
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public ServiceCatalog gatewayUiServiceCatalog(final GatewayInspector inspector, final GatewayUiProperties properties) {
+        return new ServiceCatalog(inspector, properties);
+    }
+
+    /**
+     * Testeur de routes.
+     *
+     * @param inspector inspecteur de la Gateway
+     * @return le testeur de routes
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RouteTester gatewayUiRouteTester(final GatewayInspector inspector) {
+        return new RouteTester(inspector);
+    }
+
+    /**
+     * Routes HTTP des pages et ressources de l'UI.
+     *
+     * @param properties configuration de l'UI
+     * @param inspector inspecteur de la Gateway
+     * @param serviceCatalog catalogue des services
+     * @param routeTester testeur de routes
+     * @return la fonction de routage de l'UI
+     */
+    @Bean
+    public RouterFunction<ServerResponse> gatewayUiRouterFunction(final GatewayUiProperties properties,
+            final GatewayInspector inspector, final ServiceCatalog serviceCatalog, final RouteTester routeTester) {
+        final GatewayUiHandler handler = new GatewayUiHandler(properties.basePath(), new TemplateRenderer(), inspector,
+                serviceCatalog, routeTester);
+        return GatewayUiRouter.create(properties.basePath(), handler);
+    }
+}

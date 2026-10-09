@@ -5,13 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>dev.gatewayui</groupId>
+        <groupId>io.github.doriangrelu</groupId>
         <artifactId>gateway-ui-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>gateway-ui-sample</artifactId>
-    <name>Gateway UI - Exemple</name>
+    <name>Gateway UI - Sample</name>
+    <description>Sample Spring Cloud Gateway using the Gateway UI. Not published.</description>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
@@ -23,7 +24,7 @@
             <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
         </dependency>
         <dependency>
-            <groupId>dev.gatewayui</groupId>
+            <groupId>io.github.doriangrelu</groupId>
             <artifactId>gateway-ui-spring-boot-starter</artifactId>
         </dependency>
     </dependencies>

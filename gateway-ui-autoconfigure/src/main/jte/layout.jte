@@ -1,4 +1,4 @@
-@import dev.gatewayui.web.UiContext
+@import io.github.doriangrelu.gatewayui.web.UiContext
 @import gg.jte.Content
 @param UiContext ui
 @param String title
@@ -14,9 +14,11 @@
 </head>
 <body>
 <header class="topbar">
-    <a class="brand" href="${ui.url("/routes")}">
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h6l4 6-4 6H4l4-6zM14 6h6l-4 6 4 6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-        <span>Gateway UI</span>
+    <a class="brand" href="${ui.url("/routes")}" title="Gateway UI pour Spring Cloud Gateway">
+        <span class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M20 3.5C12.5 3.4 5.6 6.9 5.2 14c-.1 1.6.2 3 .8 4.2 1-3.9 3.6-7.1 7.4-9.1-3.1 2.4-5.2 5.6-6 9.5 1.1.6 2.3.9 3.6.9 6.6-.1 9.6-7 9-16Z" fill="currentColor"/><circle cx="4.5" cy="19.5" r="1.6" fill="currentColor"/></svg>
+        </span>
+        <span class="brand-text">Gateway UI<small>Spring Cloud Gateway</small></span>
     </a>
     <nav>
         <a class="${ui.navClass("routes")}" href="${ui.url("/routes")}">Routes</a>

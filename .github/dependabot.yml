@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      spring:
+        patterns: [ "org.springframework*" ]
+      maven-plugins:
+        patterns: [ "org.apache.maven.plugins:*", "org.codehaus.mojo:*", "com.mycila:*", "org.sonatype.central:*" ]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

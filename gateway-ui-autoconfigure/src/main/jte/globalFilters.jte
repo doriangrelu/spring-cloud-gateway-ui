@@ -1,5 +1,5 @@
-@import dev.gatewayui.web.UiContext
-@import dev.gatewayui.inspect.FilterStep
+@import io.github.doriangrelu.gatewayui.web.UiContext
+@import io.github.doriangrelu.gatewayui.inspect.FilterStep
 @import java.util.List
 @param UiContext ui
 @param List<FilterStep> filters

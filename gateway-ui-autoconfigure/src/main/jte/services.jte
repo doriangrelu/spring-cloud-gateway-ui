@@ -1,6 +1,6 @@
-@import dev.gatewayui.web.UiContext
-@import dev.gatewayui.inspect.ServiceView
-@import dev.gatewayui.inspect.RouteView
+@import io.github.doriangrelu.gatewayui.web.UiContext
+@import io.github.doriangrelu.gatewayui.inspect.ServiceView
+@import io.github.doriangrelu.gatewayui.inspect.RouteView
 @import java.util.List
 @param UiContext ui
 @param List<ServiceView> services
