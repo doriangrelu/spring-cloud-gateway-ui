@@ -18,9 +18,12 @@ package io.github.doriangrelu.gatewayui.autoconfigure;
 import java.util.List;
 import java.util.Map;
 
+import io.github.doriangrelu.gatewayui.internal.editor.EditorService;
+import io.github.doriangrelu.gatewayui.internal.editor.FactoryCatalog;
 import io.github.doriangrelu.gatewayui.internal.inspect.GatewayInspector;
 import io.github.doriangrelu.gatewayui.internal.inspect.ServiceCatalog;
 import io.github.doriangrelu.gatewayui.internal.tester.RouteTester;
+import io.github.doriangrelu.gatewayui.internal.web.EditorApiHandler;
 import io.github.doriangrelu.gatewayui.internal.web.GatewayUiHandler;
 import io.github.doriangrelu.gatewayui.internal.web.GatewayUiRouter;
 import io.github.doriangrelu.gatewayui.internal.web.TemplateRenderer;
@@ -37,6 +40,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.gateway.config.GatewayAutoConfiguration;
 import org.springframework.cloud.gateway.config.GatewayProperties;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
+import org.springframework.cloud.gateway.handler.predicate.RoutePredicateFactory;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.context.annotation.Bean;
@@ -93,6 +98,31 @@ public class GatewayUiAutoConfiguration {
     }
 
     /**
+     * Fabriques de prédicats et de filtres de la Gateway, pour l'éditeur.
+     *
+     * @param predicates fabriques de prédicats
+     * @param filters fabriques de filtres
+     * @return le catalogue des fabriques
+     */
+    @Bean
+    public FactoryCatalog gatewayUiFactoryCatalog(final List<RoutePredicateFactory<?>> predicates,
+            final List<GatewayFilterFactory<?>> filters) {
+        return new FactoryCatalog(predicates, filters);
+    }
+
+    /**
+     * Service de l'éditeur graphique.
+     *
+     * @param inspector inspecteur de la Gateway
+     * @param factoryCatalog fabriques de la Gateway
+     * @return le service de l'éditeur
+     */
+    @Bean
+    public EditorService gatewayUiEditorService(final GatewayInspector inspector, final FactoryCatalog factoryCatalog) {
+        return new EditorService(inspector, factoryCatalog);
+    }
+
+    /**
      * Testeur de routes.
      *
      * @param inspector inspecteur de la Gateway
@@ -110,15 +140,17 @@ public class GatewayUiAutoConfiguration {
      * @param inspector inspecteur de la Gateway
      * @param serviceCatalog catalogue des services
      * @param routeTester testeur de routes
+     * @param editorService service de l'éditeur
      * @return la fonction de routage de l'UI
      */
     @Bean
     public RouterFunction<ServerResponse> gatewayUiRouterFunction(final GatewayUiProperties properties,
-            final GatewayInspector inspector, final ServiceCatalog serviceCatalog, final RouteTester routeTester) {
+            final GatewayInspector inspector, final ServiceCatalog serviceCatalog, final RouteTester routeTester,
+            final EditorService editorService) {
         final UiContexts contexts = new UiContexts(properties.basePath(), properties.defaultLocale());
         final GatewayUiHandler handler = new GatewayUiHandler(contexts, new TemplateRenderer(), inspector, serviceCatalog,
                 routeTester);
-        return GatewayUiRouter.create(properties.basePath(), handler);
+        return GatewayUiRouter.create(properties.basePath(), handler, new EditorApiHandler(editorService));
     }
 
     /**

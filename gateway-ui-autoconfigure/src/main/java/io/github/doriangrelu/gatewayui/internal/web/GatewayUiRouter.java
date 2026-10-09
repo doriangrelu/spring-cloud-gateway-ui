@@ -55,10 +55,22 @@ public class GatewayUiRouter {
      *
      * @param basePath préfixe des URL de l'UI
      * @param handler handler des pages
+     * @param editorApi API de l'éditeur
      * @return la fonction de routage
      */
-    public static RouterFunction<ServerResponse> create(final String basePath, final GatewayUiHandler handler) {
-        return pages(basePath, handler).and(assets(basePath)).filter(SecurityHeaders.filter());
+    public static RouterFunction<ServerResponse> create(final String basePath, final GatewayUiHandler handler,
+            final EditorApiHandler editorApi) {
+        return pages(basePath, handler).and(editorApi(basePath, editorApi)).and(assets(basePath)).filter(SecurityHeaders.filter());
+    }
+
+    private static RouterFunction<ServerResponse> editorApi(final String basePath, final EditorApiHandler api) {
+        final String root = basePath + "/api/editor";
+        return RouterFunctions.route()
+                .GET(root + "/routes", api::routes)
+                .GET(root + "/java-routes", api::javaRoutes)
+                .GET(root + "/factories", api::factories)
+                .POST(root + "/yaml", api::yaml)
+                .build();
     }
 
     private static RouterFunction<ServerResponse> pages(final String basePath, final GatewayUiHandler handler) {

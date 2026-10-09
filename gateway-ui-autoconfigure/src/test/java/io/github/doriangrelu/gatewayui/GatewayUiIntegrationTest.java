@@ -16,6 +16,7 @@
 package io.github.doriangrelu.gatewayui;
 
 import java.net.URI;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -197,6 +198,50 @@ class GatewayUiIntegrationTest {
         client.get().uri("/gateway-ui/routes?theme=pink").exchange()
                 .expectHeader().doesNotExist(HttpHeaders.SET_COOKIE)
                 .expectBody(String.class).value(body -> assertThat(body).doesNotContain("data-theme="));
+    }
+
+    @Test
+    void editorApiReadsDeclaredRoutesAsEditableRoutes() {
+        client.get().uri("/gateway-ui/api/editor/routes").exchange()
+                .expectStatus().isOk()
+                .expectHeader().exists("Content-Security-Policy")
+                .expectBody()
+                .jsonPath("$[0].id").isEqualTo("orders")
+                .jsonPath("$[0].predicates[0].values.patterns").isEqualTo("/api/orders/**")
+                .jsonPath("$[0].filters[0].values.parts").isEqualTo("1")
+                .jsonPath("$[1].filters[0].name").isEqualTo("SetPath")
+                .jsonPath("$[1].filters[0].values.template").isEqualTo("/v2/users/{id}")
+                .jsonPath("$[?(@.id == 'catch-all')].order").isEqualTo(List.of(100));
+    }
+
+    @Test
+    void editorApiListsFactoriesAndJavaRoutes() {
+        client.get().uri("/gateway-ui/api/editor/factories").exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.filters[?(@.name == 'StripPrefix')].fields[0]").isEqualTo(List.of("parts"))
+                .jsonPath("$.predicates[?(@.name == 'Path')].shortcutType").isEqualTo(List.of("GATHER_LIST_TAIL_FLAG"));
+        client.get().uri("/gateway-ui/api/editor/java-routes").exchange()
+                .expectStatus().isOk()
+                .expectBody().json("[]");
+    }
+
+    @Test
+    void editorApiGeneratesYaml() {
+        client.post().uri("/gateway-ui/api/editor/yaml")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"comments": ["Export"],
+                         "routes": [{"id": "orders", "uri": "http://orders:8080", "order": 0,
+                                     "predicates": [{"name": "Path", "values": {"patterns": "/api/orders/**"}}],
+                                     "filters": [{"name": "StripPrefix", "values": {"parts": "1"}}]}]}
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> assertThat(body)
+                        .startsWith("# Export\nspring:")
+                        .contains("- Path=/api/orders/**")
+                        .contains("- StripPrefix=1"));
     }
 
     @Test
