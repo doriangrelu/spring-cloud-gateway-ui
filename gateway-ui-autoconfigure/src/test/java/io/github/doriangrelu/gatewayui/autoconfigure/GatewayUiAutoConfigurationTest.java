@@ -15,7 +15,7 @@
  */
 package io.github.doriangrelu.gatewayui.autoconfigure;
 
-import io.github.doriangrelu.gatewayui.inspect.GatewayInspector;
+import io.github.doriangrelu.gatewayui.internal.inspect.GatewayInspector;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;

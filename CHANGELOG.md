@@ -6,6 +6,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 
 ## [Unreleased]
 
+### Modifié
+
+- API publique définie et politique de compatibilité documentée ([ADR 0008](docs/adr/0008-api-publique-et-compatibilite.md)) : l'implémentation passe dans les paquets `io.github.doriangrelu.gatewayui.internal.*`, sans garantie de compatibilité, et les beans de l'UI ne sont plus remplaçables (`@ConditionalOnMissingBean` retiré).
+
 ## [0.1.0] - 2026-10-09
 
 ### Ajouté

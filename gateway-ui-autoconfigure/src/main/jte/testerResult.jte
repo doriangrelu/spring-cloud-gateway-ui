@@ -1,10 +1,10 @@
-@import io.github.doriangrelu.gatewayui.web.UiContext
-@import io.github.doriangrelu.gatewayui.tester.TestRequest
-@import io.github.doriangrelu.gatewayui.tester.TestResult
-@import io.github.doriangrelu.gatewayui.tester.TestResult.Evaluation
-@import io.github.doriangrelu.gatewayui.tester.TestResult.Outcome
-@import io.github.doriangrelu.gatewayui.tester.TestResult.Step
-@import io.github.doriangrelu.gatewayui.tester.TestResult.StepStatus
+@import io.github.doriangrelu.gatewayui.internal.web.UiContext
+@import io.github.doriangrelu.gatewayui.internal.tester.TestRequest
+@import io.github.doriangrelu.gatewayui.internal.tester.TestResult
+@import io.github.doriangrelu.gatewayui.internal.tester.TestResult.Evaluation
+@import io.github.doriangrelu.gatewayui.internal.tester.TestResult.Outcome
+@import io.github.doriangrelu.gatewayui.internal.tester.TestResult.Step
+@import io.github.doriangrelu.gatewayui.internal.tester.TestResult.StepStatus
 @param UiContext ui
 @param TestRequest request
 @param TestResult result

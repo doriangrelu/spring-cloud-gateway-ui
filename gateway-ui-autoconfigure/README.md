@@ -6,10 +6,11 @@ Tout le code de l'UI : auto-configuration, introspection de la Gateway, testeur 
 
 ```
 io.github.doriangrelu.gatewayui
-├── autoconfigure   GatewayUiAutoConfiguration, GatewayUiProperties (gateway.ui.*)
-├── inspect         lecture de la Gateway : routes, définitions, filtres, services
-├── tester          testeur de routes : échange fictif + simulation des filtres
-└── web             routes WebFlux, handlers des pages, rendu JTE
+├── autoconfigure       GatewayUiAutoConfiguration, GatewayUiProperties (gateway.ui.*) : API publique
+└── internal            implémentation, sans garantie de compatibilité (ADR 0008)
+    ├── inspect         lecture de la Gateway : routes, définitions, filtres, services
+    ├── tester          testeur de routes : échange fictif + simulation des filtres
+    └── web             routes WebFlux, handlers des pages, rendu JTE
 src/main/jte        templates des pages (précompilés au build)
 src/main/resources  CSS de l'UI, déclaration de l'auto-configuration
 ```
@@ -26,7 +27,7 @@ Les dépendances vont dans un seul sens : `web` → `tester` → `inspect` → A
 | Application web réactive | L'UI repose sur WebFlux. |
 | `RouteLocator` et `RouteDefinitionLocator` présents | Il faut une Gateway Server WebFlux à inspecter. |
 
-Les beans `GatewayInspector`, `ServiceCatalog` et `RouteTester` sont en `@ConditionalOnMissingBean`. Une application peut les remplacer, par exemple pour masquer certaines routes.
+Les beans déclarés par l'auto-configuration sont des détails d'implémentation : ils ne sont pas prévus pour être remplacés. L'API publique se limite au starter, aux propriétés `gateway.ui.*`, à `GatewayUiProperties`, au nom de `GatewayUiAutoConfiguration` et aux URL des pages ([ADR 0008](../docs/adr/0008-api-publique-et-compatibilite.md)).
 
 ### `inspect`
 
@@ -68,7 +69,7 @@ Les filtres qui n'agissent que sur la réponse sont signalés comme tels. Tous l
 
 - **Routage** : `GatewayUiRouter` sert les pages **et** les ressources statiques via une `RouterFunction`. Son mapping est prioritaire sur celui de la Gateway, alors que le handler de ressources statiques de Spring Boot passe après. Une route `Path=/**` masquerait sinon le CSS et le JavaScript (un test le vérifie).
 - **Pages** : `GatewayUiHandler` rend une page complète, ou seulement le fragment à remplacer quand la requête vient de htmx (en-tête `HX-Request`). Chaque écran garde ainsi une URL partageable.
-- **Templates** : `TemplateRenderer` utilise des templates JTE précompilés dans un paquet dédié (`io.github.doriangrelu.gatewayui.jte`). Il n'enregistre aucun `ViewResolver`, n'embarque aucun compilateur et n'interfère pas avec le rendu de l'application hôte.
+- **Templates** : `TemplateRenderer` utilise des templates JTE précompilés dans un paquet dédié (`io.github.doriangrelu.gatewayui.internal.jte`). Il n'enregistre aucun `ViewResolver`, n'embarque aucun compilateur et n'interfère pas avec le rendu de l'application hôte.
 - **htmx** : le script est servi depuis le webjar `org.webjars.npm:htmx.org`. Sa version est lue dans le webjar lui-même, pour ne pas la dupliquer.
 
 ## Templates et style

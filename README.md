@@ -136,8 +136,24 @@ L'UI est en **lecture seule** : elle ne modifie pas les routes et n'appelle jama
 | Gateway UI | Java | Spring Boot | Spring Cloud | Gateway |
 |---|---|---|---|---|
 | 0.1.x | 25+ | 4.0.x | 2025.1.x | Server WebFlux 5.0.x |
+| 1.0.x *(à venir)* | 25+ | 4.0.x | 2025.1.x | Server WebFlux 5.0.x |
 
-La variante **Server WebMVC** de Spring Cloud Gateway n'est pas supportée.
+La variante **Server WebMVC** de Spring Cloud Gateway n'est pas encore supportée : elle est prévue pour la 1.1.0 (voir la [roadmap](docs/roadmap.md)).
+
+### Ce qui est garanti
+
+À partir de la 1.0.0, le projet suit le [versionnage sémantique](https://semver.org/lang/fr/) sur son API publique ([ADR 0008](docs/adr/0008-api-publique-et-compatibilite.md)) :
+
+- les coordonnées du starter ;
+- les propriétés `gateway.ui.*` : noms, types et sens des valeurs par défaut ;
+- `GatewayUiProperties` et le nom de `GatewayUiAutoConfiguration` ;
+- les URL des pages de l'UI, y compris les paramètres du testeur.
+
+Une propriété est d'abord dépréciée dans une version mineure, puis supprimée à la version majeure suivante.
+
+Les classes des paquets `io.github.doriangrelu.gatewayui.internal.*`, les beans de l'UI, les templates et les ressources sont des détails d'implémentation, sans garantie de compatibilité.
+
+Chaque ligne mineure supporte une génération de Spring Cloud et la génération de Spring Boot associée. Passer à une nouvelle génération donne une nouvelle version mineure, signalée dans le changelog et dans le tableau ci-dessus.
 
 ## Modules
 

@@ -1,4 +1,4 @@
-@import io.github.doriangrelu.gatewayui.web.UiContext
+@import io.github.doriangrelu.gatewayui.internal.web.UiContext
 @import gg.jte.Content
 @param UiContext ui
 @param String title

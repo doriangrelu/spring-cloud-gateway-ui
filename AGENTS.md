@@ -29,10 +29,11 @@ Après un renommage de package ou de template, faites un `./mvnw clean verify` :
 ```
 gateway-ui-autoconfigure/            tout le code
   src/main/java/io/github/doriangrelu/gatewayui/
-    autoconfigure/   GatewayUiAutoConfiguration, GatewayUiProperties (gateway.ui.*)
-    inspect/         lecture seule de la Gateway : routes, définitions, filtres, services
-    tester/          testeur : SimulatedExchange, FilterSimulator, registre FilterEffects
-    web/             RouterFunction, handlers, rendu JTE
+    autoconfigure/       GatewayUiAutoConfiguration, GatewayUiProperties (gateway.ui.*) : API publique
+    internal/            implémentation, sans garantie de compatibilité (ADR 0008)
+      inspect/          lecture seule de la Gateway : routes, définitions, filtres, services
+      tester/           testeur : SimulatedExchange, FilterSimulator, registre FilterEffects
+      web/              RouterFunction, handlers, rendu JTE
   src/main/jte/      templates (layout + pages + fragments htmx)
   src/main/resources/io/github/doriangrelu/gatewayui/assets/gateway-ui.css
 gateway-ui-spring-boot-starter/      pom seul, aucun code
@@ -59,11 +60,12 @@ Checkstyle fait échouer le build si l'une des règles marquées ✔ n'est pas r
 
 ## Comportements à préserver
 
+- **API publique limitée** (ADR 0008) : le starter, les propriétés `gateway.ui.*`, `GatewayUiProperties`, le nom de `GatewayUiAutoConfiguration` et les URL des pages. Tout nouveau code d'implémentation va dans `internal.*` ; ne rendez rien remplaçable (`@ConditionalOnMissingBean`) sans ADR. Une propriété se déprécie avant d'être supprimée.
 - **Désactivée par défaut** : sans `gateway.ui.enabled=true`, aucun bean n'est créé et aucune URL n'est exposée.
 - **Lecture seule** : l'UI ne modifie jamais la configuration et n'appelle jamais les services. Le testeur **n'exécute aucun filtre** ; il rejoue uniquement ceux enregistrés dans `FilterEffects`.
 - **Fidélité à la Gateway** : l'ordre des filtres (`GatewayInspector.pipeline`), la sélection de route et l'effet de chaque filtre simulé doivent reproduire exactement le code de Spring Cloud Gateway. Citez la classe de la Gateway reproduite dans la Javadoc, et testez-la.
 - **Pas de masquage par la Gateway** : pages *et* ressources statiques passent par la `RouterFunction` de `GatewayUiRouter`. Ne servez rien via `static/` ou `META-INF/resources` : une route `Path=/**` l'intercepterait.
-- **Pas d'interférence avec l'application hôte** : pas de `ViewResolver`, et les templates restent dans le package dédié `io.github.doriangrelu.gatewayui.jte`.
+- **Pas d'interférence avec l'application hôte** : pas de `ViewResolver`, et les templates restent dans le package dédié `io.github.doriangrelu.gatewayui.internal.jte`.
 - **htmx** : une requête avec `HX-Request` reçoit un fragment, une navigation classique la page complète. Chaque écran doit rester accessible par son URL.
 
 ## Ce qu'il ne faut pas faire

@@ -17,3 +17,4 @@ Les décisions structurantes du projet, au format [MADR](https://adr.github.io/m
 | [0005](0005-routerfunction-pour-pages-et-ressources.md) | Pages et ressources servies par une RouterFunction | Accepté |
 | [0006](0006-java-25.md) | Java 25 comme version minimale | Accepté |
 | [0007](0007-regles-de-code-outillees.md) | Règles de code imposées par l'outillage | Accepté |
+| [0008](0008-api-publique-et-compatibilite.md) | API publique et politique de compatibilité | Accepté |

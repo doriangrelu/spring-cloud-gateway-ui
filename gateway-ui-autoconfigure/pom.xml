@@ -15,7 +15,7 @@
     <description>Auto-configuration, introspection and pages of the Gateway UI.</description>
 
     <properties>
-        <jte.package>io.github.doriangrelu.gatewayui.jte</jte.package>
+        <jte.package>io.github.doriangrelu.gatewayui.internal.jte</jte.package>
     </properties>
 
     <dependencies>

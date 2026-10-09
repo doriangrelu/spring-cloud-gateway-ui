@@ -18,17 +18,16 @@ package io.github.doriangrelu.gatewayui.autoconfigure;
 import java.util.List;
 import java.util.Map;
 
-import io.github.doriangrelu.gatewayui.inspect.GatewayInspector;
-import io.github.doriangrelu.gatewayui.inspect.ServiceCatalog;
-import io.github.doriangrelu.gatewayui.tester.RouteTester;
-import io.github.doriangrelu.gatewayui.web.GatewayUiHandler;
-import io.github.doriangrelu.gatewayui.web.GatewayUiRouter;
-import io.github.doriangrelu.gatewayui.web.TemplateRenderer;
+import io.github.doriangrelu.gatewayui.internal.inspect.GatewayInspector;
+import io.github.doriangrelu.gatewayui.internal.inspect.ServiceCatalog;
+import io.github.doriangrelu.gatewayui.internal.tester.RouteTester;
+import io.github.doriangrelu.gatewayui.internal.web.GatewayUiHandler;
+import io.github.doriangrelu.gatewayui.internal.web.GatewayUiRouter;
+import io.github.doriangrelu.gatewayui.internal.web.TemplateRenderer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -48,8 +47,8 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  * aucune URL et ne charge aucun bean. Elle n'est active que dans une application réactive qui embarque Spring Cloud
  * Gateway Server WebFlux.
  *
- * <p>Les beans d'introspection ({@link GatewayInspector}, {@link ServiceCatalog}, {@link RouteTester}) peuvent être
- * remplacés en déclarant un bean du même type.
+ * <p>Les beans déclarés ici sont des détails d'implémentation (paquets {@code internal}) : ils ne font pas partie de l'API
+ * publique et ne sont pas prévus pour être remplacés (ADR 0008).
  */
 @AutoConfiguration(after = GatewayAutoConfiguration.class)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
@@ -70,7 +69,6 @@ public class GatewayUiAutoConfiguration {
      * @return l'inspecteur de la Gateway
      */
     @Bean
-    @ConditionalOnMissingBean
     public GatewayInspector gatewayUiInspector(final RouteLocator routeLocator,
             final RouteDefinitionLocator routeDefinitionLocator, final List<GlobalFilter> globalFilters,
             final Map<String, GlobalFilter> globalFilterBeans, final ObjectProvider<GatewayProperties> gatewayProperties) {
@@ -86,7 +84,6 @@ public class GatewayUiAutoConfiguration {
      * @return le catalogue des services
      */
     @Bean
-    @ConditionalOnMissingBean
     public ServiceCatalog gatewayUiServiceCatalog(final GatewayInspector inspector, final GatewayUiProperties properties) {
         return new ServiceCatalog(inspector, properties);
     }
@@ -98,7 +95,6 @@ public class GatewayUiAutoConfiguration {
      * @return le testeur de routes
      */
     @Bean
-    @ConditionalOnMissingBean
     public RouteTester gatewayUiRouteTester(final GatewayInspector inspector) {
         return new RouteTester(inspector);
     }

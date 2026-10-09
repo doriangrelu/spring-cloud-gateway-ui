@@ -1,6 +1,6 @@
-@import io.github.doriangrelu.gatewayui.web.UiContext
-@import io.github.doriangrelu.gatewayui.tester.TestRequest
-@import io.github.doriangrelu.gatewayui.tester.TestResult
+@import io.github.doriangrelu.gatewayui.internal.web.UiContext
+@import io.github.doriangrelu.gatewayui.internal.tester.TestRequest
+@import io.github.doriangrelu.gatewayui.internal.tester.TestResult
 @param UiContext ui
 @param TestRequest request
 @param TestResult result

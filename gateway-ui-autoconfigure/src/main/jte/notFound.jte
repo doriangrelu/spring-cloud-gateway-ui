@@ -1,4 +1,4 @@
-@import io.github.doriangrelu.gatewayui.web.UiContext
+@import io.github.doriangrelu.gatewayui.internal.web.UiContext
 @param UiContext ui
 @param String message
 @template.layout(ui = ui, title = "Introuvable", content = @`

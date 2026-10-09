@@ -1,7 +1,7 @@
-@import io.github.doriangrelu.gatewayui.web.UiContext
-@import io.github.doriangrelu.gatewayui.inspect.RouteView
-@import io.github.doriangrelu.gatewayui.inspect.FilterStep
-@import io.github.doriangrelu.gatewayui.inspect.Definition
+@import io.github.doriangrelu.gatewayui.internal.web.UiContext
+@import io.github.doriangrelu.gatewayui.internal.inspect.RouteView
+@import io.github.doriangrelu.gatewayui.internal.inspect.FilterStep
+@import io.github.doriangrelu.gatewayui.internal.inspect.Definition
 @import java.util.List
 @param UiContext ui
 @param RouteView route
