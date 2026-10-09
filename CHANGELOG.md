@@ -6,6 +6,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-09
+
+Éditeur graphique de routes et catalogue documenté des prédicats et filtres.
+
 ### Ajouté
 
 - Éditeur graphique de routes, page **Éditeur** (`{base-path}/editor`) ([ADR 0011](docs/adr/0011-technique-de-l-editeur.md), [ADR 0012](docs/adr/0012-modele-d-edition-et-export.md)) : modification des routes existantes et création de nouvelles sur un canevas, palette de recherche des prédicats et filtres au clavier, même testeur que la page **Testeur** sur la route éditée (méthode, hôte, en-têtes, adresse du client), seule ou dans la configuration pour voir quelle route prend la requête ; la route est construite par la Gateway elle-même, filtres par défaut compris, export YAML (route courante, configuration complète ou modifications seulement) avec les placeholders `${...}` d'origine. Le travail reste dans le navigateur : la Gateway n'est jamais modifiée. Compatible avec la protection CSRF de Spring Security.
@@ -47,6 +51,7 @@ Première version stable : l'API publique est définie et suit le versionnage s�
 - Testeur de routes : route retenue, routes masquées, simulation de `StripPrefix`, `PrefixPath`, `RewritePath`, `SetPath`, `AddRequestHeader`, `SetRequestHeader`, `RemoveRequestHeader`, `AddRequestParameter`, `SetRequestHostHeader` et `PreserveHostHeader`, sans émettre de requête.
 - Thèmes clair et sombre, affichage adapté au mobile.
 
-[Unreleased]: https://github.com/doriangrelu/spring-cloud-gateway-ui/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/doriangrelu/spring-cloud-gateway-ui/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/doriangrelu/spring-cloud-gateway-ui/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/doriangrelu/spring-cloud-gateway-ui/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/doriangrelu/spring-cloud-gateway-ui/releases/tag/v0.1.0
