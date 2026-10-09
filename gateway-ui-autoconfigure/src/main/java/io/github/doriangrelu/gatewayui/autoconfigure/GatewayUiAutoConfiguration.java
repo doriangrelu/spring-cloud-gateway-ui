@@ -25,10 +25,12 @@ import io.github.doriangrelu.gatewayui.internal.web.GatewayUiHandler;
 import io.github.doriangrelu.gatewayui.internal.web.GatewayUiRouter;
 import io.github.doriangrelu.gatewayui.internal.web.TemplateRenderer;
 import io.github.doriangrelu.gatewayui.internal.web.UiContexts;
+import io.github.doriangrelu.gatewayui.internal.web.UnprotectedUiWarning;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -38,6 +40,7 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
@@ -116,5 +119,18 @@ public class GatewayUiAutoConfiguration {
         final GatewayUiHandler handler = new GatewayUiHandler(contexts, new TemplateRenderer(), inspector, serviceCatalog,
                 routeTester);
         return GatewayUiRouter.create(properties.basePath(), handler);
+    }
+
+    /**
+     * Avertissement au démarrage quand l'UI est exposée sans Spring Security (ADR 0010).
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnMissingClass("org.springframework.security.web.server.SecurityWebFilterChain")
+    static class UnprotectedUiWarningConfiguration {
+
+        @Bean
+        UnprotectedUiWarning gatewayUiUnprotectedWarning(final GatewayUiProperties properties) {
+            return new UnprotectedUiWarning(properties.basePath());
+        }
     }
 }

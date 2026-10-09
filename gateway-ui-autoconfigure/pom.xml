@@ -58,6 +58,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Présence de Spring Security, sans sa configuration automatique : pour tester l'avertissement (ADR 0010) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

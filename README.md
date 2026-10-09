@@ -113,10 +113,18 @@ gateway:
 
 ## En production
 
-L'UI expose la topologie interne de la Gateway (hôtes, filtres, en-têtes). Elle est donc **désactivée par défaut**. Deux options :
+L'UI expose la topologie interne de la Gateway (hôtes, filtres, en-têtes). Elle est donc **désactivée par défaut**, et sa protection relève de votre application ([ADR 0010](docs/adr/0010-securiser-l-acces-a-l-ui.md)) : ses URL sont de simples routes WebFlux sous `gateway.ui.base-path`, que Spring Security protège comme n'importe quel endpoint. Si l'UI est activée sans Spring Security sur le classpath, un avertissement est journalisé au démarrage.
 
-- **Ne pas l'activer en production**, par exemple avec `gateway.ui.enabled: true` uniquement dans les profils `dev` et `recette`.
-- **La protéger** : ses URL sont de simples routes WebFlux sous `gateway.ui.base-path`, que Spring Security peut sécuriser comme n'importe quel endpoint.
+### Option 1 : ne l'activer qu'hors production
+
+```yaml
+# application-dev.yml (et application-recette.yml)
+gateway:
+  ui:
+    enabled: true
+```
+
+### Option 2 : exiger un rôle (Spring Security)
 
 ```java
 @Bean
@@ -130,9 +138,45 @@ SecurityWebFilterChain security(ServerHttpSecurity http) {
 }
 ```
 
-L'UI est en **lecture seule** : elle ne modifie pas les routes et n'appelle jamais les services.
+### Option 3 : connexion OAuth2 / OpenID Connect (Keycloak)
 
-Ses réponses portent des en-têtes de sécurité stricts (`Content-Security-Policy` limitée aux ressources de l'UI, interdiction d'intégration dans une frame, etc.). Ils ne s'appliquent qu'aux pages de l'UI, jamais aux routes de votre Gateway.
+Avec Spring Security et son client OAuth2 sur le classpath, une chaîne dédiée à l'UI, évaluée en premier, impose une connexion par Keycloak sans toucher aux autres routes de la Gateway :
+
+```yaml
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: gateway-ui
+            client-secret: ${GATEWAY_UI_CLIENT_SECRET}
+            scope: openid
+        provider:
+          keycloak:
+            issuer-uri: https://keycloak.example.com/realms/platform
+```
+
+```java
+@Bean
+@Order(Ordered.HIGHEST_PRECEDENCE)
+SecurityWebFilterChain gatewayUiSecurity(ServerHttpSecurity http) {
+    return http
+            // L'UI, plus les URL de la connexion OAuth2 (redirection et retour de Keycloak)
+            .securityMatcher(ServerWebExchangeMatchers.pathMatchers(
+                    "/gateway-ui/**", "/oauth2/authorization/**", "/login/oauth2/code/**"))
+            .authorizeExchange(exchanges -> exchanges.anyExchange().authenticated())
+            .oauth2Login(Customizer.withDefaults())
+            .build();
+}
+```
+
+Le client `gateway-ui` doit déclarer `https://<votre-gateway>/login/oauth2/code/keycloak` comme URL de redirection. Pour exiger un rôle Keycloak précis plutôt qu'une simple connexion, convertissez les rôles du jeton en autorités (`GrantedAuthoritiesMapper`), puis remplacez `authenticated()` par `hasRole(...)`.
+
+### Ce que l'UI garantit de son côté
+
+- Elle est en **lecture seule** : elle ne modifie pas les routes et n'appelle jamais les services.
+- Ses réponses portent des en-têtes de sécurité stricts (`Content-Security-Policy` limitée aux ressources de l'UI, interdiction d'intégration dans une frame, etc.). Ils ne s'appliquent qu'aux pages de l'UI, jamais aux routes de votre Gateway.
 
 ## Compatibilité
 
