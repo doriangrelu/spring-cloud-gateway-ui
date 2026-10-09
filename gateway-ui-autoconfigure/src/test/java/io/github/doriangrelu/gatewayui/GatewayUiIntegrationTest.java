@@ -315,6 +315,48 @@ class GatewayUiIntegrationTest {
                 .jsonPath("$.error").value(error -> assertThat((String) error).contains("FETCH IT"));
     }
 
+    @Test
+    void editorApiAdvisesOnTheEditedRouteInEnglish() {
+        advise("en")
+                .jsonPath("$.length()").isEqualTo(4)
+                .jsonPath("$[0].level").isEqualTo("ERROR")
+                .jsonPath("$[0].target").isEqualTo("id")
+                .jsonPath("$[0].message").isEqualTo("The identifier « orders » is already used by another route.")
+                .jsonPath("$[1].target").isEqualTo("predicates[0].regexp")
+                .jsonPath("$[1].message").value(message -> assertThat((String) message)
+                        .startsWith("Invalid regular expression in « regexp »: "))
+                .jsonPath("$[2].level").isEqualTo("WARNING")
+                .jsonPath("$[2].target").isEqualTo("predicates[1].patterns")
+                .jsonPath("$[3].target").isEqualTo("filters[0].value")
+                .jsonPath("$[3].message").isEqualTo(
+                        "The value of « value » looks like a secret written in clear: use a placeholder instead.");
+    }
+
+    @Test
+    void editorApiAdvisesOnTheEditedRouteInFrench() {
+        advise("fr")
+                .jsonPath("$[0].message").isEqualTo("L'identifiant « orders » est déjà utilisé par une autre route.")
+                .jsonPath("$[2].message").isEqualTo(
+                        "Path=/** prend toutes les requêtes : les routes évaluées après celle-ci ne sont jamais atteintes.");
+    }
+
+    private WebTestClient.BodyContentSpec advise(final String language) {
+        return client.post().uri("/gateway-ui/api/editor/advice")
+                .header(HttpHeaders.ACCEPT_LANGUAGE, language)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"route": {"id": "orders", "uri": "${orders.url}", "order": 0,
+                                   "predicates": [{"name": "Header", "values": {"header": "X-Env", "regexp": "[a-z"}},
+                                                  {"name": "Path", "values": {"patterns": "/**"}}],
+                                   "filters": [{"name": "AddRequestHeader",
+                                                "values": {"name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiJ9"}}]},
+                         "routes": [{"id": "orders", "uri": "http://orders.test", "order": 0, "predicates": [], "filters": []}]}
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody();
+    }
+
     private WebTestClient.BodyContentSpec simulate(final String body, final String language) {
         return client.post().uri("/gateway-ui/api/editor/simulate")
                 .header(HttpHeaders.ACCEPT_LANGUAGE, language)

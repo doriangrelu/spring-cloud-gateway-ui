@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 import io.github.doriangrelu.gatewayui.internal.editor.EditableRoute;
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService;
+import io.github.doriangrelu.gatewayui.internal.editor.EditorService.AdviceRequest;
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService.YamlRequest;
 import io.github.doriangrelu.gatewayui.internal.i18n.Message;
 import io.github.doriangrelu.gatewayui.internal.tester.TestRequest;
@@ -30,7 +31,7 @@ import reactor.core.publisher.Mono;
 /**
  * API JSON de l'éditeur graphique (ADR 0011), sous {@code {base-path}/api/editor}.
  *
- * <p>Elle lit la configuration de la Gateway et calcule des résultats (YAML) : elle ne modifie jamais rien.
+ * <p>Elle lit la configuration de la Gateway et calcule des résultats (YAML, conseils, simulation) : elle ne modifie jamais rien.
  */
 public class EditorApiHandler {
 
@@ -101,6 +102,19 @@ public class EditorApiHandler {
             return Mono.just(EditorSimulationView.failure(invalid, ui));
         }
         return editor.simulate(body.route(), test).map(outcome -> EditorSimulationView.of(outcome, ui));
+    }
+
+    /**
+     * Conseils sur la route éditée, dans le contexte des autres routes de l'espace de travail.
+     *
+     * @param request requête HTTP, avec la route éditée et les autres routes en JSON
+     * @return les conseils, textes traduits
+     */
+    public Mono<ServerResponse> advice(final ServerRequest request) {
+        final UiContext ui = contexts.create(request, "editor");
+        return request.bodyToMono(AdviceRequest.class)
+                .map(body -> editor.advise(body).stream().map(advice -> EditorAdviceView.of(advice, ui)).toList())
+                .flatMap(views -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(views));
     }
 
     /**
