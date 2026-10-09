@@ -312,6 +312,12 @@ tr:last-child td { border-bottom: none; }
 .service-routes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .service-routes li { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--border); }
 
+/* Écran étroit : les onglets passent sur leur propre ligne, sous la marque et les préférences, sans défilement caché */
+@media (max-width: 1100px) {
+    .topbar { flex-wrap: wrap; height: auto; padding: 8px 16px; gap: 8px 16px; }
+    .topbar > nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
+}
+
 @media (max-width: 640px) {
     .topbar { gap: 12px; padding: 0 16px; }
     .brand-text { display: none; }

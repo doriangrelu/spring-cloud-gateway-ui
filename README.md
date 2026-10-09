@@ -23,6 +23,8 @@ Un starter à ajouter, une propriété à activer, et l'UI est disponible sur `/
 | **Services** | Les routes regroupées par service cible, qu'il soit déclaré en configuration ou déduit des URI des routes. |
 | **Filtres globaux** | L'ordre effectif de chaque filtre global. Les filtres sans ordre explicite sont signalés, par exemple un `@Order` posé sur une méthode `@Bean`, que la Gateway ignore. |
 | **Testeur** | Pour une requête donnée (méthode, hôte, chemin, en-têtes, IP) : la route retenue, les routes **masquées** par une route prioritaire, le chemin réécrit étape par étape et la requête transmise au service. **Aucune requête n'est envoyée.** |
+| **Éditeur** | Modifier les routes existantes ou en créer de nouvelles sur un canevas, avec l'aide du catalogue et des conseils (identifiant en double, regex invalide, `Path=/**`, secret en clair...). La route éditée se teste avec le même testeur, seule ou dans la configuration, puis s'exporte en YAML, placeholders `${...}` d'origine compris. **La Gateway n'est jamais modifiée** : le travail reste dans le navigateur. |
+| **Catalogue** | Tous les prédicats et filtres disponibles dans votre Gateway, classés par catégorie, avec pour les plus courants une explication, la description de chaque argument et un exemple. Les filtres maison sont signalés. |
 
 ### Aperçu
 
@@ -33,6 +35,15 @@ Requête entrante → prédicats → **toute la chaîne de filtres**, globaux et
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/route-detail-dark.png">
   <img alt="Parcours d'une requête dans la route users : le prédicat Path, puis 13 filtres globaux et de route dans l'ordre d'exécution avec leur ordre, puis la cible" src="docs/images/route-detail-light.png">
+</picture>
+
+#### L'éditeur de routes
+
+Les routes de la Gateway et les nouvelles routes, chacune avec son statut (inchangée, modifiée, nouvelle, retirée). On ajoute un prédicat ou un filtre depuis une palette de recherche, on le déplace dans la chaîne, et l'aide du catalogue s'affiche dans le panneau. Le testeur rejoue la route éditée exactement comme la Gateway la construirait. L'export YAML couvre la route courante, la configuration complète ou les seules modifications.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/editor-dark.png">
+  <img alt="Éditeur de routes : liste des routes avec leur statut, canevas de la route orders (requête entrante, prédicat Path, filtre StripPrefix, cible), panneau des propriétés et export YAML" src="docs/images/editor-light.png">
 </picture>
 
 #### Les autres écrans
@@ -61,6 +72,15 @@ Requête entrante → prédicats → **toute la chaîne de filtres**, globaux et
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/global-filters-dark.png">
   <img alt="Filtres globaux triés par ordre, dont un filtre lambda signalé comme non ordonné" src="docs/images/global-filters-light.png">
+</picture>
+</details>
+
+<details>
+<summary><strong>Catalogue</strong> : prédicats et filtres expliqués, par catégorie</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/catalog-dark.png">
+  <img alt="Catalogue des prédicats et filtres : sommaire par catégorie, puis fiches des prédicats Host et Path avec résumé, arguments, exemple et lien vers la documentation officielle" src="docs/images/catalog-light.png">
 </picture>
 </details>
 
@@ -175,7 +195,7 @@ Le client `gateway-ui` doit déclarer `https://<votre-gateway>/login/oauth2/code
 
 ### Ce que l'UI garantit de son côté
 
-- Elle est en **lecture seule** : elle ne modifie pas les routes et n'appelle jamais les services.
+- Elle est en **lecture seule** : elle ne modifie pas les routes et n'appelle jamais les services. L'éditeur produit du YAML à reporter dans votre configuration ; son travail reste dans le navigateur, et ses appels POST sont compatibles avec la protection CSRF de Spring Security.
 - Ses réponses portent des en-têtes de sécurité stricts (`Content-Security-Policy` limitée aux ressources de l'UI, interdiction d'intégration dans une frame, etc.). Ils ne s'appliquent qu'aux pages de l'UI, jamais aux routes de votre Gateway.
 
 ## Compatibilité
@@ -198,7 +218,7 @@ La variante **Server WebMVC** de Spring Cloud Gateway n'est pas encore supporté
 
 Une propriété est d'abord dépréciée dans une version mineure, puis supprimée à la version majeure suivante.
 
-Les classes des paquets `io.github.doriangrelu.gatewayui.internal.*`, les beans de l'UI, les templates et les ressources sont des détails d'implémentation, sans garantie de compatibilité.
+Les classes des paquets `io.github.doriangrelu.gatewayui.internal.*`, les beans de l'UI, les templates et les ressources, ainsi que l'API JSON de l'éditeur (`{base-path}/api/editor`), sont des détails d'implémentation, sans garantie de compatibilité.
 
 Chaque ligne mineure supporte une génération de Spring Cloud et la génération de Spring Boot associée. Passer à une nouvelle génération donne une nouvelle version mineure, signalée dans le changelog et dans le tableau ci-dessus.
 

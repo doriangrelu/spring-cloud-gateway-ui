@@ -35,15 +35,17 @@ gateway-ui-autoconfigure/            tout le code
       i18n/             messages FR/EN (messages_xx.properties) et clés de message (ADR 0009)
       inspect/          lecture seule de la Gateway : routes, définitions, filtres, services
       tester/           testeur : SimulatedExchange, FilterSimulator, registre FilterEffects
+      editor/           éditeur graphique : routes éditables, YAML, conseils, simulation de la route éditée, catalogue
       web/              RouterFunction, handlers, rendu JTE
   src/main/jte/      templates (layout + pages + fragments htmx)
   src/main/resources/io/github/doriangrelu/gatewayui/assets/gateway-ui.css
+  src/main/resources/io/github/doriangrelu/gatewayui/assets/editor/   modules JavaScript natifs de l'éditeur (ADR 0011)
 gateway-ui-spring-boot-starter/      pom seul, aucun code
 gateway-ui-sample/                   Gateway d'exemple, jamais publiée
 config/                              Checkstyle et en-tête de licence
 ```
 
-Les dépendances vont dans un seul sens : `web` → `tester` → `inspect` → Spring Cloud Gateway. `inspect` et `tester` ne doivent dépendre ni de HTTP ni des templates.
+Les dépendances vont dans un seul sens : `web` → `editor` → `tester` → `inspect` → Spring Cloud Gateway. `inspect`, `tester` et `editor` ne doivent dépendre ni de HTTP ni des templates.
 
 ## Règles de code (non négociables)
 
@@ -73,7 +75,7 @@ Checkstyle fait échouer le build si l'une des règles marquées ✔ n'est pas r
 
 ## Ce qu'il ne faut pas faire
 
-- Ajouter une SPA, un build front (npm...) ou Thymeleaf.
+- Ajouter une SPA, un build front (npm...) ou Thymeleaf. Seul l'éditeur a du JavaScript : des modules natifs, sans dépendance, qui affichent et appellent l'API ; la logique reste en Java (ADR 0011).
 - Abaisser la version de Java, ou cibler Gateway Server WebMVC.
 - Ajouter une dépendance au starter sans raison forte : il est embarqué dans les Gateways des utilisateurs.
 - Contourner Checkstyle (`@SuppressWarnings("checkstyle:...")`, modification des seuils) sans demande explicite.
@@ -86,6 +88,7 @@ Checkstyle fait échouer le build si l'une des règles marquées ✔ n'est pas r
 | **Simuler un nouveau filtre** | 1. Écrire une méthode `(Definition, SimulationState) -> String` dans `FilterEffects`, qui reproduit la fabrique de la Gateway. 2. L'enregistrer dans `EFFECTS`. 3. L'ajouter à `PATH_FILTERS` si elle modifie le chemin. 4. Ajouter un test, et mettre à jour la liste des filtres dans le README de `gateway-ui-autoconfigure`. |
 | **Ajouter une page** | 1. Créer un template `src/main/jte/<page>.jte` qui utilise `@template.layout(...)`. 2. Ajouter une méthode au `GatewayUiHandler`. 3. Déclarer la route dans `GatewayUiRouter.pages`. 4. Ajouter le lien dans `layout.jte`. 5. Ajouter un test dans `GatewayUiIntegrationTest`. |
 | **Ajouter une propriété** | 1. Ajouter le composant au record `GatewayUiProperties`, avec sa Javadoc `@param` et un `@DefaultValue`. 2. La documenter dans le tableau *Configuration* du README racine. |
+| **Documenter une fabrique du catalogue** | Ajouter `catalog.predicate.<Nom>.summary` (ou `catalog.filter.<Nom>.summary`), `.details` (facultatif), `.arg.<champ>` pour chaque champ et `.example` dans les deux fichiers de messages, avec nos propres mots (ADR 0013). `GatewayUiCatalogIntegrationTest` vérifie noms et champs. Une nouvelle fabrique de la Gateway se classe dans `Catalog` (catégorie, lien vérifié vers la documentation). |
 
 ## Tests
 

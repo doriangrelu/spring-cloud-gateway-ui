@@ -72,7 +72,7 @@ Ces règles visent un code **lisible sans effort** : on doit comprendre une mét
 
 ### Interface
 
-- Rendu serveur avec JTE et interactions htmx : **pas de SPA, pas de build front**.
+- Rendu serveur avec JTE et interactions htmx : **pas de SPA, pas de build front**. Seul l'éditeur utilise des modules JavaScript natifs (`assets/editor/`), sans dépendance ([ADR 0011](docs/adr/0011-technique-de-l-editeur.md)) : ils affichent et appellent l'API, toute la logique reste en Java.
 - Chaque écran doit rester accessible par son URL. Une requête htmx reçoit un fragment, une navigation classique la page complète.
 - Les couleurs passent par les variables CSS de `gateway-ui.css`, définies pour le thème clair et le thème sombre.
 - Après un changement visible de l'UI, régénérez les captures de la documentation, dans les deux thèmes, avec la [Gateway d'exemple](gateway-ui-sample) démarrée :
@@ -80,6 +80,23 @@ Ces règles visent un code **lisible sans effort** : on doit comprendre une mét
   ```bash
   docs/screenshots.sh
   ```
+
+### Documenter un prédicat ou un filtre du catalogue
+
+Le catalogue ([ADR 0013](docs/adr/0013-catalogue-documente.md)) est une bonne première contribution. Pour une fabrique, ajoutez dans `messages_fr.properties` **et** `messages_en.properties` :
+
+```properties
+catalog.filter.SetResponseHeader.summary=Remplace un en-tête de la réponse renvoyée au client.
+catalog.filter.SetResponseHeader.details=(facultatif) Précision utile, piège à éviter.
+catalog.filter.SetResponseHeader.arg.name=Nom de l'en-tête.
+catalog.filter.SetResponseHeader.arg.value=Nouvelle valeur.
+catalog.filter.SetResponseHeader.example=- SetResponseHeader=X-Frame-Options, DENY
+```
+
+- Rédigez avec vos propres mots, sans recopier la documentation de Spring, et vérifiez le comportement dans le code de la Gateway.
+- Décrivez **chaque** champ (`.arg.<champ>`) : les noms viennent de `shortcutFieldOrder()` de la fabrique, visibles sur la page « Catalogue ».
+- Dans un fichier `.properties`, un antislash s'écrit `\\` (`\\d+`, `$\\{segment}`).
+- `GatewayUiCatalogIntegrationTest` vérifie que chaque clé correspond à une fabrique et à un champ réels, et que tous les champs sont décrits.
 
 ## Commits et pull requests
 
