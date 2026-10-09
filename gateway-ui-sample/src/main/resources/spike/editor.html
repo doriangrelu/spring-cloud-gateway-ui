@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Prototype d'éditeur · Gateway UI</title>
+    <link rel="stylesheet" href="/gateway-ui/assets/gateway-ui.css">
+    <link rel="stylesheet" href="/gateway-ui/editor-proto/drawflow/drawflow.min.css">
+    <link rel="stylesheet" href="/gateway-ui/editor-proto/static/editor.css">
+    <script src="/gateway-ui/editor-proto/drawflow/drawflow.min.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/editor-core.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/renderer-canvas.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/renderer-drawflow.js" defer></script>
+    <script src="/gateway-ui/editor-proto/static/main.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="/gateway-ui/routes">
+        <span class="brand-text">Gateway UI<small>Prototype d'éditeur (spike #28)</small></span>
+    </a>
+    <div class="preferences">
+        <nav class="switch" aria-label="Moteur de rendu">
+            <a href="?mode=canvas" data-mode="canvas">Canevas maison</a>
+            <a href="?mode=drawflow" data-mode="drawflow">Drawflow</a>
+        </nav>
+    </div>
+</header>
+<main class="editor-main">
+    <div class="editor-toolbar card">
+        <label>Route
+            <select id="route-select"></select>
+        </label>
+        <button type="button" id="new-route" class="secondary">Nouvelle route</button>
+        <span class="toolbar-sep"></span>
+        <label>Prédicat
+            <select id="predicate-factory"></select>
+        </label>
+        <button type="button" id="add-predicate" class="secondary">Ajouter</button>
+        <label>Filtre
+            <select id="filter-factory"></select>
+        </label>
+        <button type="button" id="add-filter" class="secondary">Ajouter</button>
+    </div>
+
+    <div class="editor-layout">
+        <section class="card editor-canvas-card">
+            <h2 id="mode-title"></h2>
+            <p class="hint" id="mode-hint"></p>
+            <div id="canvas" class="editor-canvas"></div>
+        </section>
+        <aside class="card editor-panel" id="panel"></aside>
+    </div>
+
+    <section class="card">
+        <div class="yaml-head">
+            <h2>YAML généré</h2>
+            <button type="button" id="copy-yaml">Copier</button>
+        </div>
+        <pre class="yaml mono" id="yaml"></pre>
+    </section>
+</main>
+</body>
+</html>
