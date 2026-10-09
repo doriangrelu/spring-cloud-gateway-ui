@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sample-gateway",
+      "runtimeExecutable": "mvn.cmd",
+      "runtimeArgs": ["-q", "-f", "gateway-ui-sample/pom.xml", "spring-boot:run"],
+      "port": 8080
+    }
+  ]
+}

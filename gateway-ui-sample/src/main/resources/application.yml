@@ -1,0 +1,62 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: sample-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          default-filters:
+            - AddRequestHeader=X-Request-Source, gateway
+          routes:
+            - id: orders
+              uri: http://orders.shop.svc.cluster.local:8080
+              predicates:
+                - Path=/api/orders/**
+              filters:
+                - StripPrefix=1
+
+            - id: users
+              uri: http://users.shop.svc.cluster.local:8080
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - RewritePath=/api/users/(?<segment>.*), /users/$\{segment}
+                - AddResponseHeader=X-Served-By, users
+
+            # Masquée par "users" (ordre plus élevé, chemin inclus dans /api/users/**)
+            - id: users-legacy
+              uri: http://users-legacy.shop.svc.cluster.local:8080
+              order: 10
+              predicates:
+                - Path=/api/users/legacy/**
+
+            - id: catalog-product
+              uri: http://catalog.shop.svc.cluster.local
+              predicates:
+                - Path=/catalog/{id}
+                - Method=GET
+              filters:
+                - SetPath=/products/{id}
+                - PreserveHostHeader
+
+            - id: admin
+              uri: https://admin.internal
+              predicates:
+                - Host=admin.example.com
+                - Header=X-Admin-Token, .+
+              metadata:
+                team: platform
+
+gateway:
+  ui:
+    enabled: true
+    services:
+      orders:
+        url: http://orders.shop.svc.cluster.local:8080
+        display-name: Commandes
+      payments:
+        url: http://payments.shop.svc.cluster.local:8080
+        display-name: Paiements
