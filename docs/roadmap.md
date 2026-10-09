@@ -18,7 +18,8 @@ Routes, détail d'une route avec sa chaîne de filtres, services, filtres globau
 - Décisions fondatrices tracées dans des ADR
 - Une version candidate `1.0.0-RC1`, validée sur une Gateway réelle avant la version finale
 
-### 1.1.0 : éditeur graphique de routes
+### 1.1.0 : éditeur graphique de routes et support de WebMVC
+- Support de Spring Cloud Gateway Server WebMVC, en plus de WebFlux (voir [ADR 0001](adr/0001-gateway-server-webflux.md))
 - Canevas visuel prédicats → filtres → cible, préchargé avec les routes de la Gateway
 - Formulaires générés à partir des fabriques de la Gateway, filtres maison compris
 - Génération du YAML à copier dans la configuration : l'éditeur ne modifie jamais la Gateway
@@ -40,5 +41,4 @@ Routes, détail d'une route avec sa chaîne de filtres, services, filtres globau
 - Découverte de services (Kubernetes, `lb://`)
 
 ## Hors périmètre
-- Spring Cloud Gateway Server WebMVC
 - Modification de la configuration de la Gateway depuis l'UI
