@@ -131,6 +131,8 @@ SecurityWebFilterChain security(ServerHttpSecurity http) {
 
 L'UI est en **lecture seule** : elle ne modifie pas les routes et n'appelle jamais les services.
 
+Ses réponses portent des en-têtes de sécurité stricts (`Content-Security-Policy` limitée aux ressources de l'UI, interdiction d'intégration dans une frame, etc.). Ils ne s'appliquent qu'aux pages de l'UI, jamais aux routes de votre Gateway.
+
 ## Compatibilité
 
 | Gateway UI | Java | Spring Boot | Spring Cloud | Gateway |

@@ -58,7 +58,7 @@ public class GatewayUiRouter {
      * @return la fonction de routage
      */
     public static RouterFunction<ServerResponse> create(final String basePath, final GatewayUiHandler handler) {
-        return pages(basePath, handler).and(assets(basePath));
+        return pages(basePath, handler).and(assets(basePath)).filter(SecurityHeaders.filter());
     }
 
     private static RouterFunction<ServerResponse> pages(final String basePath, final GatewayUiHandler handler) {

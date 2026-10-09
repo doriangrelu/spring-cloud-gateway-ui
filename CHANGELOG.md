@@ -10,6 +10,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 
 - API publique définie et politique de compatibilité documentée ([ADR 0008](docs/adr/0008-api-publique-et-compatibilite.md)) : l'implémentation passe dans les paquets `io.github.doriangrelu.gatewayui.internal.*`, sans garantie de compatibilité, et les beans de l'UI ne sont plus remplaçables (`@ConditionalOnMissingBean` retiré).
 
+### Sécurité
+
+- En-têtes de sécurité sur toutes les réponses de l'UI, et uniquement sur elles : `Content-Security-Policy` stricte (seules les ressources servies par l'UI sont autorisées), `X-Content-Type-Options`, `X-Frame-Options` et `Referrer-Policy`.
+
 ## [0.1.0] - 2026-10-09
 
 ### Ajouté

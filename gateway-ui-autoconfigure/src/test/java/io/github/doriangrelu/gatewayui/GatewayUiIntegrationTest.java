@@ -45,6 +45,11 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.cloud.gateway.server.webflux.routes[2].uri=http://fallback.test:8080",
         "spring.cloud.gateway.server.webflux.routes[2].order=100",
         "spring.cloud.gateway.server.webflux.routes[2].predicates[0]=Path=/**",
+        // Route qui répond sans appel réseau : ses réponses ne doivent pas porter les en-têtes de l'UI
+        "spring.cloud.gateway.server.webflux.routes[3].id=no-op",
+        "spring.cloud.gateway.server.webflux.routes[3].uri=no://op",
+        "spring.cloud.gateway.server.webflux.routes[3].predicates[0]=Path=/no-op",
+        "spring.cloud.gateway.server.webflux.routes[3].filters[0]=SetStatus=204",
 })
 class GatewayUiIntegrationTest {
 
@@ -125,6 +130,26 @@ class GatewayUiIntegrationTest {
                 .expectHeader().contentTypeCompatibleWith("text/css");
         client.get().uri("/gateway-ui/assets/htmx.min.js").exchange()
                 .expectStatus().isOk();
+    }
+
+    @Test
+    void uiResponsesCarrySecurityHeaders() {
+        for (final String path : new String[] {"/gateway-ui/routes", "/gateway-ui/routes/nope", "/gateway-ui/assets/gateway-ui.css"}) {
+            client.get().uri(path).exchange()
+                    .expectHeader().valueMatches("Content-Security-Policy",
+                            "default-src 'none'; script-src 'self'; style-src 'self'.*frame-ancestors 'none'")
+                    .expectHeader().valueEquals("X-Content-Type-Options", "nosniff")
+                    .expectHeader().valueEquals("X-Frame-Options", "DENY")
+                    .expectHeader().valueEquals("Referrer-Policy", "no-referrer");
+        }
+    }
+
+    @Test
+    void gatewayRoutesDoNotCarryUiSecurityHeaders() {
+        client.get().uri("/no-op").exchange()
+                .expectStatus().isNoContent()
+                .expectHeader().doesNotExist("Content-Security-Policy")
+                .expectHeader().doesNotExist("X-Frame-Options");
     }
 
     @SpringBootConfiguration

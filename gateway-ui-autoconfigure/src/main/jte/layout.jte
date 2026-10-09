@@ -8,6 +8,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <%-- Pas de feuille de style inline injectée par htmx : la CSP de l'UI l'interdit --%>
+    <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
     <title>${title} · Gateway UI</title>
     <link rel="stylesheet" href="${ui.asset("gateway-ui.css")}">
     <script src="${ui.asset("htmx.min.js")}" defer></script>
