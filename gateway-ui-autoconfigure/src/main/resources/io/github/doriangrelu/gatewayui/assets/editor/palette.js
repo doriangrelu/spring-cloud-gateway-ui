@@ -2,6 +2,7 @@
  * Éditeur graphique : palette de recherche pour ajouter un prédicat ou un filtre, pilotable au clavier
  * (combobox ARIA : la liste est annoncée par aria-activedescendant, le focus reste dans le champ).
  */
+import { Catalog } from './catalog.js';
 import { Model } from './model.js';
 import { t } from './i18n.js';
 
@@ -14,12 +15,20 @@ let kind = 'filter';
 let results = [];
 let active = 0;
 
+// Sans recherche, les fabriques documentées d'abord ; sinon le nom prime sur le résumé et la catégorie
 function score(name, query) {
+    const entry = Catalog.get(kind, name);
     const normalized = normalize(name);
-    if (!query || normalized.startsWith(query)) {
+    if (!query) {
+        return entry && entry.documented ? 0 : 1;
+    }
+    if (normalized.startsWith(query)) {
         return 0;
     }
-    return normalized.includes(query) ? 1 : -1;
+    if (normalized.includes(query)) {
+        return 1;
+    }
+    return entry && normalize(entry.summary + ' ' + entry.category).includes(query) ? 2 : -1;
 }
 
 function option(name, index) {
@@ -33,10 +42,17 @@ function option(name, index) {
     const title = document.createElement('strong');
     title.textContent = name;
     head.append(title);
+    const entry = Catalog.get(kind, name);
+    if (entry) {
+        const category = document.createElement('span');
+        category.className = 'tag';
+        category.textContent = entry.category;
+        head.append(category);
+    }
     const fields = Model.factory(kind, name).fields;
     const summary = document.createElement('div');
-    summary.className = 'palette-summary mono muted';
-    summary.textContent = fields.length ? fields.join(', ') : t('palette.noArgs');
+    summary.className = 'palette-summary' + (entry && entry.documented ? '' : ' muted');
+    summary.textContent = entry ? entry.summary : (fields.length ? fields.join(', ') : t('palette.noArgs'));
     element.append(head, summary);
     element.addEventListener('mousedown', event => {
         event.preventDefault();

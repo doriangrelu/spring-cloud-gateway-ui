@@ -38,6 +38,7 @@ export const Api = {
     routes: () => get('/routes'),
     javaRoutes: () => get('/java-routes'),
     factories: () => get('/factories'),
+    catalog: () => get('/catalog'),
     yaml: (routes, comments) => post('/yaml', { routes, comments }, false),
     simulate: (route, request) => post('/simulate', { route, ...request }),
     advice: (route, routes) => post('/advice', { route, routes })

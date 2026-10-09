@@ -78,6 +78,17 @@ public class Messages {
     }
 
     /**
+     * Indique si un message existe dans une langue : le catalogue est rédigé progressivement (ADR 0013).
+     *
+     * @param locale langue supportée
+     * @param key clé du message
+     * @return {@code true} si le message existe
+     */
+    public boolean contains(final Locale locale, final String key) {
+        return bundles.get(supported(locale).orElse(Locale.ENGLISH)).containsKey(key);
+    }
+
+    /**
      * Texte d'un message produit par l'implémentation.
      *
      * @param locale langue supportée

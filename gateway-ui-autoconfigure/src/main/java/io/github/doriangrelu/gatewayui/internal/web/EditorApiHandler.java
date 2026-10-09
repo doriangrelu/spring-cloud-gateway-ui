@@ -17,6 +17,7 @@ package io.github.doriangrelu.gatewayui.internal.web;
 
 import java.nio.charset.StandardCharsets;
 
+import io.github.doriangrelu.gatewayui.internal.editor.Catalog;
 import io.github.doriangrelu.gatewayui.internal.editor.EditableRoute;
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService;
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService.AdviceRequest;
@@ -41,15 +42,19 @@ public class EditorApiHandler {
 
     private final UiContexts contexts;
 
+    private final Catalog catalog;
+
     /**
      * Crée le handler.
      *
      * @param editor service de l'éditeur
      * @param contexts contextes de rendu, pour la langue des textes renvoyés
+     * @param catalog catalogue des prédicats et filtres
      */
-    public EditorApiHandler(final EditorService editor, final UiContexts contexts) {
+    public EditorApiHandler(final EditorService editor, final UiContexts contexts, final Catalog catalog) {
         this.editor = editor;
         this.contexts = contexts;
+        this.catalog = catalog;
     }
 
     /**
@@ -80,6 +85,18 @@ public class EditorApiHandler {
      */
     public Mono<ServerResponse> factories(final ServerRequest request) {
         return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(editor.factories());
+    }
+
+    /**
+     * Catalogue des prédicats et filtres, textes traduits : aide de la palette et du panneau (ADR 0013).
+     *
+     * @param request requête HTTP
+     * @return les fabriques, en JSON
+     */
+    public Mono<ServerResponse> catalog(final ServerRequest request) {
+        final UiContext ui = contexts.create(request, "editor");
+        return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(catalog.entries().stream().map(entry -> CatalogView.of(entry, ui)).toList());
     }
 
     /**

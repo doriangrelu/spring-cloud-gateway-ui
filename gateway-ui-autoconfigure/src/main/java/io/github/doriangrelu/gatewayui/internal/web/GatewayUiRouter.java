@@ -69,6 +69,7 @@ public class GatewayUiRouter {
                 .GET(root + "/routes", api::routes)
                 .GET(root + "/java-routes", api::javaRoutes)
                 .GET(root + "/factories", api::factories)
+                .GET(root + "/catalog", api::catalog)
                 .POST(root + "/yaml", api::yaml)
                 .POST(root + "/simulate", api::simulate)
                 .POST(root + "/advice", api::advice)
@@ -85,6 +86,7 @@ public class GatewayUiRouter {
                 .GET(basePath + "/filters", handler::globalFilters)
                 .GET(basePath + "/tester", handler::tester)
                 .GET(basePath + "/editor", handler::editor)
+                .GET(basePath + "/catalog", handler::catalog)
                 .build();
     }
 

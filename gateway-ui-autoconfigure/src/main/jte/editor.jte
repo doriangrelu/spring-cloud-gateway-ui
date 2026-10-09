@@ -5,7 +5,7 @@
 @param Optional<CsrfToken> csrf
 @template.layout(ui = ui, title = ui.message("editor.title"), content = @`
     <%-- Données de la page pour les scripts : URL de l'API, jeton CSRF de Spring Security s'il est actif --%>
-    <div id="editor" class="editor" data-api="${ui.url("/api/editor")}"
+    <div id="editor" class="editor" data-api="${ui.url("/api/editor")}" data-catalog="${ui.url("/catalog")}"
          data-csrf-header="${csrf.map(CsrfToken::headerName).orElse(null)}" data-csrf-token="${csrf.map(CsrfToken::token).orElse(null)}">
         <div class="page-head">
             <div>

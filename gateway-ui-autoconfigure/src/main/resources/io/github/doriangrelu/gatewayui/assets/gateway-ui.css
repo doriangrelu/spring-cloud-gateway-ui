@@ -422,3 +422,21 @@ input[aria-invalid="true"] { border-color: var(--error); }
     .canvas-flow { gap: 24px; }
     .node { max-width: 100%; }
 }
+
+/* Catalogue des prédicats et filtres (ADR 0013), page dédiée et aide de l'éditeur */
+.help { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.help-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.help-summary { margin: 8px 0 4px; font-weight: 500; }
+.help-details { margin: 4px 0; color: var(--muted); }
+.help-example, .catalog-example { margin: 8px 0; padding: 8px; background: var(--surface); border-radius: 6px; white-space: pre-wrap; font-size: 12px; }
+.help-links { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; }
+.catalog-index { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 16px; }
+.catalog-index p { margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px; }
+.catalog-grid { margin-bottom: 24px; }
+.catalog-entry { scroll-margin-top: 72px; }
+.catalog-entry:target { outline: 2px solid var(--accent); }
+.catalog-entry header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.catalog-entry h3 { margin: 0; }
+.catalog-summary { font-weight: 500; }
+.catalog-example { background: var(--surface-2); }
+.catalog-entry .kv dd { word-break: normal; }

@@ -18,6 +18,7 @@ package io.github.doriangrelu.gatewayui.autoconfigure;
 import java.util.List;
 import java.util.Map;
 
+import io.github.doriangrelu.gatewayui.internal.editor.Catalog;
 import io.github.doriangrelu.gatewayui.internal.editor.EditedRouteSimulator;
 import io.github.doriangrelu.gatewayui.internal.editor.EditedRouteSimulator.RouteDefinitionRouteLocatorFactory;
 import io.github.doriangrelu.gatewayui.internal.editor.EditorService;
@@ -117,6 +118,18 @@ public class GatewayUiAutoConfiguration {
     }
 
     /**
+     * Catalogue documenté des prédicats et filtres de la Gateway (ADR 0013).
+     *
+     * @param predicates fabriques de prédicats
+     * @param filters fabriques de filtres
+     * @return le catalogue
+     */
+    @Bean
+    public Catalog gatewayUiCatalog(final List<RoutePredicateFactory<?>> predicates, final List<GatewayFilterFactory<?>> filters) {
+        return new Catalog(predicates, filters);
+    }
+
+    /**
      * Service de l'éditeur graphique.
      *
      * @param inspector inspecteur de la Gateway
@@ -182,16 +195,17 @@ public class GatewayUiAutoConfiguration {
      * @param serviceCatalog catalogue des services
      * @param routeTester testeur de routes
      * @param editorService service de l'éditeur
+     * @param catalog catalogue des prédicats et filtres
      * @return la fonction de routage de l'UI
      */
     @Bean
     public RouterFunction<ServerResponse> gatewayUiRouterFunction(final GatewayUiProperties properties,
             final GatewayInspector inspector, final ServiceCatalog serviceCatalog, final RouteTester routeTester,
-            final EditorService editorService) {
+            final EditorService editorService, final Catalog catalog) {
         final UiContexts contexts = new UiContexts(properties.basePath(), properties.defaultLocale());
         final GatewayUiHandler handler = new GatewayUiHandler(contexts, new TemplateRenderer(), inspector, serviceCatalog,
-                routeTester);
-        return GatewayUiRouter.create(properties.basePath(), handler, new EditorApiHandler(editorService, contexts));
+                routeTester, catalog);
+        return GatewayUiRouter.create(properties.basePath(), handler, new EditorApiHandler(editorService, contexts, catalog));
     }
 
     /**

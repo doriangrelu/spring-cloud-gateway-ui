@@ -100,6 +100,16 @@ public record UiContext(String basePath, String page, Locale locale, UiTheme the
     }
 
     /**
+     * Indique si un message existe dans la langue de la page.
+     *
+     * @param key clé du message
+     * @return {@code true} si le message existe
+     */
+    public boolean hasMessage(final String key) {
+        return messages.contains(locale, key);
+    }
+
+    /**
      * Clés des messages qui commencent par un préfixe, triées : la page de l'éditeur les fournit à ses scripts.
      *
      * @param prefix préfixe des clés

@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.github.doriangrelu.gatewayui.internal.editor.Catalog;
 import io.github.doriangrelu.gatewayui.internal.i18n.Message;
 import io.github.doriangrelu.gatewayui.internal.inspect.GatewayInspector;
 import io.github.doriangrelu.gatewayui.internal.inspect.ServiceCatalog;
@@ -51,6 +52,8 @@ public class GatewayUiHandler {
 
     private final RouteTester routeTester;
 
+    private final Catalog catalog;
+
     /**
      * Crée le handler des pages.
      *
@@ -59,14 +62,16 @@ public class GatewayUiHandler {
      * @param inspector inspecteur de la Gateway
      * @param serviceCatalog catalogue des services
      * @param routeTester testeur de routes
+     * @param catalog catalogue des prédicats et filtres
      */
     public GatewayUiHandler(final UiContexts contexts, final TemplateRenderer renderer, final GatewayInspector inspector,
-            final ServiceCatalog serviceCatalog, final RouteTester routeTester) {
+            final ServiceCatalog serviceCatalog, final RouteTester routeTester, final Catalog catalog) {
         this.contexts = contexts;
         this.renderer = renderer;
         this.inspector = inspector;
         this.serviceCatalog = serviceCatalog;
         this.routeTester = routeTester;
+        this.catalog = catalog;
     }
 
     /**
@@ -162,6 +167,17 @@ public class GatewayUiHandler {
     public Mono<ServerResponse> editor(final ServerRequest request) {
         final UiContext page = contexts.create(request, "editor");
         return CsrfToken.of(request).flatMap(csrf -> html("editor", Map.of("ui", page, "csrf", csrf)));
+    }
+
+    /**
+     * Catalogue documenté des prédicats et filtres (ADR 0013).
+     *
+     * @param request requête HTTP
+     * @return la page
+     */
+    public Mono<ServerResponse> catalog(final ServerRequest request) {
+        final UiContext page = contexts.create(request, "catalog");
+        return html("catalog", Map.of("ui", page, "groups", CatalogView.groups(catalog.entries(), page)));
     }
 
     private static Map<String, Object> testerParams(final UiContext page, final TestRequest testRequest) {

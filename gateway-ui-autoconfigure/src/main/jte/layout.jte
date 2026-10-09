@@ -30,6 +30,7 @@
         <a class="${ui.navClass("filters")}" href="${ui.url("/filters")}">${ui.message("nav.filters")}</a>
         <a class="${ui.navClass("tester")}" href="${ui.url("/tester")}">${ui.message("nav.tester")}</a>
         <a class="${ui.navClass("editor")}" href="${ui.url("/editor")}">${ui.message("nav.editor")}</a>
+        <a class="${ui.navClass("catalog")}" href="${ui.url("/catalog")}">${ui.message("nav.catalog")}</a>
     </nav>
     <div class="preferences">
         <nav class="switch" aria-label="${ui.message("theme.label")}">

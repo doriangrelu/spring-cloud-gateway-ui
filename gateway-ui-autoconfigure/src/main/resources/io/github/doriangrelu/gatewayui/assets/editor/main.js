@@ -2,6 +2,7 @@
  * Éditeur graphique : chargement des données de la Gateway et branchement de la page.
  */
 import { Api } from './api.js';
+import { Catalog } from './catalog.js';
 import { redrawCanvas, render, setExportMode } from './editor.js';
 import { t } from './i18n.js';
 import { Model } from './model.js';
@@ -51,8 +52,9 @@ function bindShortcuts() {
 
 async function start() {
     try {
-        const [factories, routes, javaRoutes] = await Promise.all([Api.factories(), Api.routes(), Api.javaRoutes()]);
+        const [factories, catalog, routes, javaRoutes] = await Promise.all([Api.factories(), Api.catalog(), Api.routes(), Api.javaRoutes()]);
         Model.setFactories(factories);
+        Catalog.set(catalog);
         Workspace.init(routes, javaRoutes);
     } catch (error) {
         document.getElementById('load-error').hidden = false;

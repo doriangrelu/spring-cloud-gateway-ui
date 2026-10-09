@@ -4,6 +4,7 @@
  */
 import { Api } from './api.js';
 import { Canvas } from './canvas.js';
+import { Catalog } from './catalog.js';
 import { t } from './i18n.js';
 import { Model } from './model.js';
 import { Palette } from './palette.js';
@@ -143,15 +144,53 @@ function renderTargetPanel(panel) {
         input(t('panel.order'), route().order, updateOrder, t('panel.order.hint')));
 }
 
+function link(text, href, external) {
+    const element = make('a', 'help-link', text);
+    element.href = href;
+    if (external) {
+        element.target = '_blank';
+        element.rel = 'noopener noreferrer';
+    }
+    return element;
+}
+
+// Aide du catalogue (ADR 0013) : catégorie, résumé, détails, exemple et liens
+function help(entry) {
+    const box = make('div', 'help');
+    const head = make('div', 'help-head');
+    head.append(make('span', 'tag', entry.category));
+    if (entry.custom || !entry.documented) {
+        head.append(make('span', 'chip', t(entry.custom ? 'help.custom' : 'help.undocumented')));
+    }
+    box.append(head, make('p', 'help-summary', entry.summary));
+    if (entry.details) {
+        box.append(make('p', 'help-details', entry.details));
+    }
+    if (entry.example) {
+        box.append(make('pre', 'help-example mono', entry.example));
+    }
+    const links = make('div', 'help-links');
+    links.append(link(t('help.catalog'), Catalog.page(entry), false));
+    if (entry.documentation) {
+        links.append(link(t('help.documentation'), entry.documentation, true));
+    }
+    box.append(links);
+    return box;
+}
+
 function renderStepPanel(panel) {
     const { kind, index } = selection;
     const item = items(kind)[index];
     panel.append(make('span', 'context-label', t(kind === 'predicate' ? 'panel.predicate' : 'panel.filter')), make('h2', '', item.name));
+    const entry = Catalog.get(kind, item.name);
+    if (entry) {
+        panel.append(help(entry));
+    }
     const fields = Model.fields(kind, item);
     if (!fields.length) {
         panel.append(make('p', 'hint', t('palette.noArgs')));
     }
-    fields.forEach(name => panel.append(input(name, item.values[name], v => update(kind, index, name, v))));
+    fields.forEach(name => panel.append(input(name, item.values[name], v => update(kind, index, name, v), entry && entry.args[name])));
     const actions = make('div', 'panel-actions');
     if (kind === 'filter') {
         actions.append(button(t('panel.before'), () => move(kind, index, index - 1)), button(t('panel.after'), () => move(kind, index, index + 1)));
