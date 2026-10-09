@@ -434,3 +434,7 @@ input[aria-invalid="true"] { border-color: var(--error); }
 .editor-tester .tester-form { margin-bottom: 12px; }
 .editor-tester .check { display: flex; gap: 8px; align-items: center; margin: 10px 0; font-size: 13px; }
 .editor-tester .lint { margin: 0 0 12px; }
+.editor-tester .lint:empty { display: none; }
+.editor-tester > details > summary { cursor: pointer; }
+.editor-tester > details > summary h2 { display: inline; margin: 0; }
+.editor-tester > details[open] > summary { margin-bottom: 12px; }

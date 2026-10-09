@@ -29,34 +29,37 @@
             <aside class="card editor-panel" id="panel" aria-label="${ui.message("editor.panel")}"></aside>
         </div>
 
-        <%-- Même formulaire et même résultat que la page « Testeur », appliqués à la route éditée (#39) --%>
-        <section class="card editor-tester" id="live-test" aria-labelledby="editor-test-title" hidden>
-            <h2 id="editor-test-title">${ui.message("editor.test")}</h2>
-            <form class="tester-form" id="editor-test-form">
-                <div class="request-line">
-                    <select name="method" aria-label="${ui.message("tester.method")}">
-                        @for(String method : new String[] {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"})
-                            <option value="${method}">${method}</option>
-                        @endfor
-                    </select>
-                    <input class="mono" name="host" aria-label="${ui.message("tester.host")}" placeholder="localhost" size="18">
-                    <input class="mono grow" name="path" aria-label="${ui.message("tester.path")}" placeholder="/api/orders/42?expand=true">
-                </div>
-                <label class="check"><input type="checkbox" name="context"> ${ui.message("editor.test.context")}</label>
-                <details>
-                    <summary>${ui.message("tester.advanced")}</summary>
-                    <div class="advanced">
-                        <label>${ui.message("tester.headers")}
-                            <textarea class="mono" name="headers" rows="4" placeholder="Authorization: Bearer xxx&#10;X-Version: 2"></textarea>
-                        </label>
-                        <label>${ui.message("tester.remoteAddress")}
-                            <input class="mono" name="remoteAddress">
-                        </label>
-                    </div>
-                </details>
-            </form>
+        <%-- Testeur de la route éditée : même formulaire et même résultat que la page « Testeur » (#39). Les conseils restent
+             visibles ; le testeur est replié par défaut et n'interroge le serveur qu'une fois ouvert --%>
+        <section class="card editor-tester" id="live-test" hidden>
             <ul class="lint" id="advice" aria-live="polite"></ul>
-            <div id="editor-test-result" aria-live="polite"></div>
+            <details id="editor-test">
+                <summary><h2>${ui.message("editor.test")}</h2></summary>
+                <form class="tester-form" id="editor-test-form">
+                    <div class="request-line">
+                        <select name="method" aria-label="${ui.message("tester.method")}">
+                            @for(String method : new String[] {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"})
+                                <option value="${method}">${method}</option>
+                            @endfor
+                        </select>
+                        <input class="mono" name="host" aria-label="${ui.message("tester.host")}" placeholder="localhost" size="18">
+                        <input class="mono grow" name="path" aria-label="${ui.message("tester.path")}" placeholder="/api/orders/42?expand=true">
+                    </div>
+                    <label class="check"><input type="checkbox" name="context"> ${ui.message("editor.test.context")}</label>
+                    <details>
+                        <summary>${ui.message("tester.advanced")}</summary>
+                        <div class="advanced">
+                            <label>${ui.message("tester.headers")}
+                                <textarea class="mono" name="headers" rows="4" placeholder="Authorization: Bearer xxx&#10;X-Version: 2"></textarea>
+                            </label>
+                            <label>${ui.message("tester.remoteAddress")}
+                                <input class="mono" name="remoteAddress">
+                            </label>
+                        </div>
+                    </details>
+                </form>
+                <div id="editor-test-result" aria-live="polite"></div>
+            </details>
         </section>
 
         <section class="card">

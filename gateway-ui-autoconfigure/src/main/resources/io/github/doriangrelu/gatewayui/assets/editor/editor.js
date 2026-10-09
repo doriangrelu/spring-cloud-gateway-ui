@@ -221,6 +221,7 @@ function defaultPath(r) {
 const form = el('editor-test-form');
 form.addEventListener('submit', event => event.preventDefault());
 form.addEventListener('input', () => schedule());
+el('editor-test').addEventListener('toggle', () => schedule());
 
 // Nouvelle route sélectionnée : chemin d'exemple déduit de ses prédicats, les autres champs sont conservés
 function renderTest() {
@@ -239,6 +240,9 @@ function testRequest() {
 
 // Fragment HTML produit par le serveur (template du Testeur, textes échappés) : aucun script, compatible avec la CSP
 function renderResult(html) {
+    if (html === undefined) {
+        return;
+    }
     if (html === null) {
         el('editor-test-result').replaceChildren(make('p', 'alert alert-error', t('error.api')));
     } else {
@@ -283,7 +287,7 @@ async function evaluate() {
     }
     const others = Workspace.others();
     const [result, advice] = await Promise.all([
-        Api.test(r, others, testRequest()).catch(() => null),
+        el('editor-test').open ? Api.test(r, others, testRequest()).catch(() => null) : Promise.resolve(undefined),
         Api.advice(r, others).catch(() => [])
     ]);
     if (current === sequence) {
