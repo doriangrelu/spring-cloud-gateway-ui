@@ -23,3 +23,4 @@ Les décisions structurantes du projet, au format [MADR](https://adr.github.io/m
 | [0011](0011-technique-de-l-editeur.md) | Technique de l'éditeur graphique | Accepté |
 | [0012](0012-modele-d-edition-et-export.md) | Modèle d'édition et export YAML | Accepté |
 | [0013](0013-catalogue-documente.md) | Catalogue documenté des prédicats et filtres | Accepté |
+| [0014](0014-developpement-pilote-par-les-specifications.md) | Développement piloté par les spécifications avec Spec Kit | Accepté |

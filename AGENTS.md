@@ -81,6 +81,14 @@ Checkstyle fait échouer le build si l'une des règles marquées ✔ n'est pas r
 - Contourner Checkstyle (`@SuppressWarnings("checkstyle:...")`, modification des seuils) sans demande explicite.
 - Publier, tagger ou modifier la version des POM : la release est manuelle et passe par un tag (voir [RELEASING.md](RELEASING.md)).
 
+## Processus : Spec Kit (ADR 0014)
+
+Une nouvelle fonctionnalité suit le cycle [Spec Kit](https://github.com/github/spec-kit), avec les skills de `.claude/skills/` (ou `.github/skills/` pour Copilot) : `/speckit-specify` → `/speckit-clarify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-analyze` → `/speckit-implement`. Les documents vont dans `specs/NNN-nom/`, en français. La constitution (`.specify/memory/constitution.md`) renvoie à ce fichier et aux ADR, qui font foi.
+
+- Chaque étape est soumise au mainteneur avant la suivante.
+- Toute décision structurante du plan donne un ADR *Proposé* ; l'implémentation attend son acceptation.
+- Une correction mineure peut s'en passer ; la règle « une tâche, et un ADR si décision » reste valable.
+
 ## Ajouter une fonctionnalité courante
 
 | Je veux... | Étapes |
