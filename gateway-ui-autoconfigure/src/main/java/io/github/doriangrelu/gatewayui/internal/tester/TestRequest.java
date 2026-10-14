@@ -20,6 +20,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import io.github.doriangrelu.gatewayui.internal.i18n.Message;
@@ -36,8 +37,13 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @param host valeur de l'en-tête {@code Host} et de l'hôte de l'URI, {@code localhost} par défaut
  * @param headers en-têtes supplémentaires, un par ligne au format {@code Nom: valeur}
  * @param remoteAddress IP du client, utilisée par le prédicat {@code RemoteAddr}, {@code 127.0.0.1} par défaut
+ * @param body corps de la requête, vide par défaut ; ignoré par la simulation, qui reproduit un corps vide (ADR 0004),
+ *        et envoyé par l'appel réel pour les seules méthodes qui en portent un (ADR 0015)
  */
-public record TestRequest(String method, String pathAndQuery, String host, String headers, String remoteAddress) {
+public record TestRequest(String method, String pathAndQuery, String host, String headers, String remoteAddress, String body) {
+
+    /** Méthodes dont l'appel réel transmet le corps saisi. */
+    private static final Set<String> METHODS_WITH_BODY = Set.of("POST", "PUT", "PATCH", "DELETE");
 
     private static final String DEFAULT_METHOD = "GET";
 
@@ -60,17 +66,42 @@ public record TestRequest(String method, String pathAndQuery, String host, Strin
         host = blankTo(host, DEFAULT_HOST);
         headers = headers == null ? "" : headers;
         remoteAddress = blankTo(remoteAddress, DEFAULT_REMOTE_ADDRESS);
+        body = body == null ? "" : body;
+    }
+
+    /**
+     * Crée une requête sans corps, comme celles de la simulation.
+     *
+     * @param method méthode HTTP
+     * @param pathAndQuery chemin et query string
+     * @param host valeur de l'en-tête {@code Host}
+     * @param headers en-têtes supplémentaires, un par ligne
+     * @param remoteAddress IP du client
+     */
+    public TestRequest(final String method, final String pathAndQuery, final String host, final String headers,
+            final String remoteAddress) {
+        this(method, pathAndQuery, host, headers, remoteAddress, null);
     }
 
     /**
      * Construit la requête à partir des paramètres du formulaire du testeur.
      *
-     * @param params paramètres {@code method}, {@code path}, {@code host}, {@code headers} et {@code remoteAddress}
+     * @param params paramètres {@code method}, {@code path}, {@code host}, {@code headers}, {@code remoteAddress} et
+     *        {@code body}
      * @return la requête à tester
      */
     public static TestRequest from(final MultiValueMap<String, String> params) {
         return new TestRequest(params.getFirst("method"), params.getFirst("path"), params.getFirst("host"),
-                params.getFirst("headers"), params.getFirst("remoteAddress"));
+                params.getFirst("headers"), params.getFirst("remoteAddress"), params.getFirst("body"));
+    }
+
+    /**
+     * Indique si la méthode porte un corps, que l'appel réel transmet alors.
+     *
+     * @return {@code true} pour {@code POST}, {@code PUT}, {@code PATCH} et {@code DELETE}
+     */
+    public boolean carriesBody() {
+        return METHODS_WITH_BODY.contains(method);
     }
 
     /**
@@ -101,11 +132,21 @@ public record TestRequest(String method, String pathAndQuery, String host, Strin
         }
     }
 
-    HttpMethod httpMethod() {
+    /**
+     * Méthode HTTP de la requête, à n'appeler qu'après {@link #validate()}.
+     *
+     * @return la méthode
+     */
+    public HttpMethod httpMethod() {
         return HttpMethod.valueOf(method);
     }
 
-    URI uri() {
+    /**
+     * URI de la requête, avec l'hôte saisi, à n'appeler qu'après {@link #validate()}.
+     *
+     * @return l'URI encodée
+     */
+    public URI uri() {
         return UriComponentsBuilder.fromUriString("http://" + host + pathAndQuery).encode().build().toUri();
     }
 
@@ -124,7 +165,12 @@ public record TestRequest(String method, String pathAndQuery, String host, Strin
         return InetSocketAddress.createUnresolved(remoteAddress, 0);
     }
 
-    HttpHeaders httpHeaders() {
+    /**
+     * En-têtes saisis, plus {@code Host} s'il n'a pas été saisi.
+     *
+     * @return les en-têtes de la requête
+     */
+    public HttpHeaders httpHeaders() {
         final HttpHeaders result = new HttpHeaders();
         headers.lines().forEach(line -> addHeaderLine(result, line));
         if (!result.containsHeader(HttpHeaders.HOST)) {

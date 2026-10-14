@@ -6,6 +6,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 
 ## [Unreleased]
 
+### Ajouté
+
+- Mode **Appel réel** du testeur, désactivé par défaut ([ADR 0015](docs/adr/0015-appel-reel-du-testeur.md)). Avec `gateway.ui.tester.real-call.enabled: true`, un sélecteur **Simulation | Appel réel** apparaît dans le testeur. En mode Appel réel, la requête saisie, corps compris pour `POST`, `PUT`, `PATCH` et `DELETE`, est envoyée à la Gateway elle-même, comme le ferait un client. L'UI affiche le statut, la durée, les en-têtes de la réponse (valeurs sensibles masquées), un extrait borné du corps, la route réellement empruntée comparée à la simulation et l'URL transmise au service. Compatible avec la protection CSRF de Spring Security ; un avertissement est journalisé au démarrage quand le mode est activé.
+- Propriétés `gateway.ui.tester.real-call.enabled` (`false`), `gateway.ui.tester.real-call.timeout` (`5s`) et `gateway.ui.tester.real-call.max-body-size` (`64KB`).
+
+### Modifié
+
+- `GatewayUiProperties` reçoit un composant `tester`. L'ancien constructeur est conservé et déprécié : le code qui l'instancie continue de compiler.
+
 ## [1.1.0] - 2026-10-09
 
 Éditeur graphique de routes et catalogue documenté des prédicats et filtres.

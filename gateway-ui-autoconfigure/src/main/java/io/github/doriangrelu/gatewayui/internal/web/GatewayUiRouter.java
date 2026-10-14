@@ -55,12 +55,22 @@ public class GatewayUiRouter {
      *
      * @param basePath préfixe des URL de l'UI
      * @param handler handler des pages
+     * @param tester handler du testeur
      * @param editorApi API de l'éditeur
      * @return la fonction de routage
      */
     public static RouterFunction<ServerResponse> create(final String basePath, final GatewayUiHandler handler,
-            final EditorApiHandler editorApi) {
-        return pages(basePath, handler).and(editorApi(basePath, editorApi)).and(assets(basePath)).filter(SecurityHeaders.filter());
+            final TesterHandler tester, final EditorApiHandler editorApi) {
+        return pages(basePath, handler).and(tester(basePath, tester)).and(editorApi(basePath, editorApi)).and(assets(basePath))
+                .filter(SecurityHeaders.filter());
+    }
+
+    /** L'URL d'appel réel est déclarée même quand le mode est désactivé : une route {@code Path=/**} la capterait sinon. */
+    private static RouterFunction<ServerResponse> tester(final String basePath, final TesterHandler tester) {
+        return RouterFunctions.route()
+                .GET(basePath + "/tester", tester::tester)
+                .POST(basePath + "/tester/call", tester::call)
+                .build();
     }
 
     private static RouterFunction<ServerResponse> editorApi(final String basePath, final EditorApiHandler api) {
@@ -85,7 +95,6 @@ public class GatewayUiRouter {
                 .GET(basePath + "/routes/{id}", handler::route)
                 .GET(basePath + "/services", handler::services)
                 .GET(basePath + "/filters", handler::globalFilters)
-                .GET(basePath + "/tester", handler::tester)
                 .GET(basePath + "/editor", handler::editor)
                 .GET(basePath + "/catalog", handler::catalog)
                 .build();

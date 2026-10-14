@@ -27,11 +27,17 @@ import io.github.doriangrelu.gatewayui.internal.editor.RawRouteConfiguration;
 import io.github.doriangrelu.gatewayui.internal.editor.RouteAdvisor;
 import io.github.doriangrelu.gatewayui.internal.inspect.GatewayInspector;
 import io.github.doriangrelu.gatewayui.internal.inspect.ServiceCatalog;
+import io.github.doriangrelu.gatewayui.internal.realcall.CallCorrelationFilter;
+import io.github.doriangrelu.gatewayui.internal.realcall.CallRegistry;
+import io.github.doriangrelu.gatewayui.internal.realcall.LocalServerAddress;
+import io.github.doriangrelu.gatewayui.internal.realcall.RealCallWarning;
+import io.github.doriangrelu.gatewayui.internal.realcall.RealCaller;
 import io.github.doriangrelu.gatewayui.internal.tester.RouteTester;
 import io.github.doriangrelu.gatewayui.internal.web.EditorApiHandler;
 import io.github.doriangrelu.gatewayui.internal.web.GatewayUiHandler;
 import io.github.doriangrelu.gatewayui.internal.web.GatewayUiRouter;
 import io.github.doriangrelu.gatewayui.internal.web.TemplateRenderer;
+import io.github.doriangrelu.gatewayui.internal.web.TesterHandler;
 import io.github.doriangrelu.gatewayui.internal.web.UiContexts;
 import io.github.doriangrelu.gatewayui.internal.web.UnprotectedUiWarning;
 import org.springframework.beans.factory.ObjectProvider;
@@ -53,6 +59,7 @@ import org.springframework.cloud.gateway.support.ConfigurationService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Environment;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
@@ -188,25 +195,120 @@ public class GatewayUiAutoConfiguration {
     }
 
     /**
+     * Contextes de rendu des pages : chemin de l'UI et langue.
+     *
+     * @param properties configuration de l'UI
+     * @return la fabrique des contextes de rendu
+     */
+    @Bean
+    public UiContexts gatewayUiContexts(final GatewayUiProperties properties) {
+        return new UiContexts(properties.basePath(), properties.defaultLocale());
+    }
+
+    /**
+     * Moteur des templates précompilés de l'UI ; ce n'est pas un {@code ViewResolver} et il n'interfère pas avec
+     * l'application hôte.
+     *
+     * @return le moteur de templates
+     */
+    @Bean
+    public TemplateRenderer gatewayUiTemplateRenderer() {
+        return new TemplateRenderer();
+    }
+
+    /**
+     * Pages de consultation : routes, services, filtres globaux, éditeur, catalogue.
+     *
+     * @param contexts contextes de rendu
+     * @param renderer moteur de templates
+     * @param inspector inspecteur de la Gateway
+     * @param serviceCatalog catalogue des services
+     * @param catalog catalogue des prédicats et filtres
+     * @return le handler des pages
+     */
+    @Bean
+    public GatewayUiHandler gatewayUiHandler(final UiContexts contexts, final TemplateRenderer renderer,
+            final GatewayInspector inspector, final ServiceCatalog serviceCatalog, final Catalog catalog) {
+        return new GatewayUiHandler(contexts, renderer, inspector, serviceCatalog, catalog);
+    }
+
+    /**
+     * Page du testeur, simulation et appel réel.
+     *
+     * @param contexts contextes de rendu
+     * @param renderer moteur de templates
+     * @param routeTester testeur de routes
+     * @param realCaller émetteur des appels réels, absent quand le mode est désactivé
+     * @return le handler du testeur
+     */
+    @Bean
+    public TesterHandler gatewayUiTesterHandler(final UiContexts contexts, final TemplateRenderer renderer,
+            final RouteTester routeTester, final ObjectProvider<RealCaller> realCaller) {
+        return new TesterHandler(contexts, renderer, routeTester, realCaller.getIfAvailable());
+    }
+
+    /**
+     * API de l'éditeur graphique.
+     *
+     * @param editorService service de l'éditeur
+     * @param contexts contextes de rendu
+     * @param catalog catalogue des prédicats et filtres
+     * @param renderer moteur de templates
+     * @return le handler de l'API
+     */
+    @Bean
+    public EditorApiHandler gatewayUiEditorApiHandler(final EditorService editorService, final UiContexts contexts,
+            final Catalog catalog, final TemplateRenderer renderer) {
+        return new EditorApiHandler(editorService, contexts, catalog, renderer);
+    }
+
+    /**
      * Routes HTTP des pages et ressources de l'UI.
      *
      * @param properties configuration de l'UI
-     * @param inspector inspecteur de la Gateway
-     * @param serviceCatalog catalogue des services
-     * @param routeTester testeur de routes
-     * @param editorService service de l'éditeur
-     * @param catalog catalogue des prédicats et filtres
+     * @param handler handler des pages
+     * @param tester handler du testeur
+     * @param editorApi API de l'éditeur
      * @return la fonction de routage de l'UI
      */
     @Bean
     public RouterFunction<ServerResponse> gatewayUiRouterFunction(final GatewayUiProperties properties,
-            final GatewayInspector inspector, final ServiceCatalog serviceCatalog, final RouteTester routeTester,
-            final EditorService editorService, final Catalog catalog) {
-        final UiContexts contexts = new UiContexts(properties.basePath(), properties.defaultLocale());
-        final TemplateRenderer renderer = new TemplateRenderer();
-        final GatewayUiHandler handler = new GatewayUiHandler(contexts, renderer, inspector, serviceCatalog,
-                routeTester, catalog);
-        return GatewayUiRouter.create(properties.basePath(), handler, new EditorApiHandler(editorService, contexts, catalog, renderer));
+            final GatewayUiHandler handler, final TesterHandler tester, final EditorApiHandler editorApi) {
+        return GatewayUiRouter.create(properties.basePath(), handler, tester, editorApi);
+    }
+
+    /**
+     * Mode « appel réel » du testeur (ADR 0015) : ses beans n'existent que si l'exploitant l'a activé.
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnProperty(prefix = GatewayUiProperties.PREFIX + ".tester.real-call", name = "enabled", havingValue = "true")
+    static class RealCallConfiguration {
+
+        @Bean
+        LocalServerAddress gatewayUiLocalServerAddress(final Environment environment) {
+            return new LocalServerAddress(environment);
+        }
+
+        @Bean
+        CallRegistry gatewayUiCallRegistry(final GatewayUiProperties properties) {
+            return new CallRegistry(properties.tester().realCall().timeout());
+        }
+
+        @Bean
+        CallCorrelationFilter gatewayUiCallCorrelationFilter(final CallRegistry registry) {
+            return new CallCorrelationFilter(registry);
+        }
+
+        @Bean
+        RealCaller gatewayUiRealCaller(final LocalServerAddress address, final GatewayUiProperties properties,
+                final CallRegistry registry) {
+            return new RealCaller(address, properties.basePath(), properties.tester().realCall(), registry);
+        }
+
+        @Bean
+        RealCallWarning gatewayUiRealCallWarning(final GatewayUiProperties properties) {
+            return new RealCallWarning(properties.basePath());
+        }
     }
 
     /**

@@ -19,7 +19,7 @@ Routes, détail d'une route avec sa chaîne de filtres, services, filtres globau
 
 ### 1.2.0 : support de WebMVC, appels réels et authentification
 - Support de Spring Cloud Gateway Server WebMVC, en plus de WebFlux (voir [ADR 0001](adr/0001-gateway-server-webflux.md))
-- Mode « appel réel » du testeur, désactivé par défaut
+- Mode « appel réel » du testeur, désactivé par défaut : réalisé ([ADR 0015](adr/0015-appel-reel-du-testeur.md))
 - Adaptateurs d'authentification : OAuth2 (authorization code, client credentials), Basic, token statique
 
 ### 1.3.0 : observabilité

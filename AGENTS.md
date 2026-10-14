@@ -36,6 +36,7 @@ gateway-ui-autoconfigure/            tout le code
       inspect/          lecture seule de la Gateway : routes, définitions, filtres, services
       tester/           testeur : SimulatedExchange, FilterSimulator, registre FilterEffects
       editor/           éditeur graphique : routes éditables, YAML, conseils, simulation de la route éditée, catalogue
+      realcall/         mode « appel réel » du testeur : envoi à la Gateway elle-même, corrélation de la route (ADR 0015)
       web/              RouterFunction, handlers, rendu JTE
   src/main/jte/      templates (layout + pages + fragments htmx)
   src/main/resources/io/github/doriangrelu/gatewayui/assets/gateway-ui.css
@@ -45,7 +46,7 @@ gateway-ui-sample/                   Gateway d'exemple, jamais publiée
 config/                              Checkstyle et en-tête de licence
 ```
 
-Les dépendances vont dans un seul sens : `web` → `editor` → `tester` → `inspect` → Spring Cloud Gateway. `inspect`, `tester` et `editor` ne doivent dépendre ni de HTTP ni des templates.
+Les dépendances vont dans un seul sens : `web` → `editor` → `tester` → `inspect` → Spring Cloud Gateway, et `web` → `realcall` → `tester`. `inspect`, `tester` et `editor` ne doivent dépendre ni de HTTP ni des templates ; `realcall` est le seul paquet, hors `web`, qui émet du HTTP.
 
 ## Règles de code (non négociables)
 
@@ -66,7 +67,7 @@ Checkstyle fait échouer le build si l'une des règles marquées ✔ n'est pas r
 
 - **API publique limitée** (ADR 0008) : le starter, les propriétés `gateway.ui.*`, `GatewayUiProperties`, le nom de `GatewayUiAutoConfiguration` et les URL des pages. Tout nouveau code d'implémentation va dans `internal.*` ; ne rendez rien remplaçable (`@ConditionalOnMissingBean`) sans ADR. Une propriété se déprécie avant d'être supprimée.
 - **Désactivée par défaut** : sans `gateway.ui.enabled=true`, aucun bean n'est créé et aucune URL n'est exposée.
-- **Lecture seule** : l'UI ne modifie jamais la configuration et n'appelle jamais les services. Le testeur **n'exécute aucun filtre** ; il rejoue uniquement ceux enregistrés dans `FilterEffects`.
+- **Lecture seule** : l'UI ne modifie jamais la configuration et n'appelle jamais les services. Le testeur **n'exécute aucun filtre** ; il rejoue uniquement ceux enregistrés dans `FilterEffects`. Seule exception : le mode « appel réel » (`gateway.ui.tester.real-call.enabled`, désactivé par défaut, ADR 0015), qui envoie la requête à la Gateway elle-même ; ses beans n'existent que s'il est activé, et son URL reste déclarée (404) quand il ne l'est pas.
 - **Fidélité à la Gateway** : l'ordre des filtres (`GatewayInspector.pipeline`), la sélection de route et l'effet de chaque filtre simulé doivent reproduire exactement le code de Spring Cloud Gateway. Citez la classe de la Gateway reproduite dans la Javadoc, et testez-la.
 - **Pas de masquage par la Gateway** : pages *et* ressources statiques passent par la `RouterFunction` de `GatewayUiRouter`. Ne servez rien via `static/` ou `META-INF/resources` : une route `Path=/**` l'intercepterait.
 - **Pas d'interférence avec l'application hôte** : pas de `ViewResolver`, et les templates restent dans le package dédié `io.github.doriangrelu.gatewayui.internal.jte`.

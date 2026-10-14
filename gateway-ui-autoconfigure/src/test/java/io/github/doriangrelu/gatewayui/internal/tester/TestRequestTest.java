@@ -15,9 +15,12 @@
  */
 package io.github.doriangrelu.gatewayui.internal.tester;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.util.LinkedMultiValueMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,6 +60,33 @@ class TestRequestTest {
     void rejectsInvalidMethodAndHost() {
         assertThat(new TestRequest("G-T", "/", null, null, null).validate().key()).isEqualTo("tester.error.method");
         assertThat(new TestRequest("GET", "/", "bad host", null, null).validate()).isNotNull();
+    }
+
+    @Test
+    void bodyIsEmptyByDefault() {
+        assertThat(new TestRequest("POST", "/", null, null, null).body()).isEmpty();
+        assertThat(new TestRequest("POST", "/", null, null, null, null).body()).isEmpty();
+    }
+
+    @Test
+    void readsBodyFromTheForm() {
+        final LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("method", "put");
+        params.add("path", "/api/orders/42");
+        params.add("body", "{\"status\": \"paid\"}");
+
+        final TestRequest request = TestRequest.from(params);
+
+        assertThat(request.body()).isEqualTo("{\"status\": \"paid\"}");
+        assertThat(request.carriesBody()).isTrue();
+    }
+
+    @Test
+    void onlyWriteMethodsCarryABody() {
+        assertThat(List.of("POST", "PUT", "PATCH", "DELETE"))
+                .allMatch(method -> new TestRequest(method, "/", null, null, null, "x").carriesBody());
+        assertThat(List.of("GET", "HEAD", "OPTIONS"))
+                .noneMatch(method -> new TestRequest(method, "/", null, null, null, "x").carriesBody());
     }
 
     @Test

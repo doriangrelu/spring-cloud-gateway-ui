@@ -12,12 +12,13 @@ io.github.doriangrelu.gatewayui
     ├── inspect         lecture de la Gateway : routes, définitions, filtres, services
     ├── tester          testeur de routes : échange fictif + simulation des filtres
     ├── editor          éditeur graphique : modèle d'édition, YAML, conseils, simulation de la route éditée, catalogue
+    ├── realcall        mode « appel réel » du testeur : envoi à la Gateway elle-même, corrélation de la route (ADR 0015)
     └── web             routes WebFlux, handlers des pages et de l'API de l'éditeur, rendu JTE
 src/main/jte        templates des pages (précompilés au build)
 src/main/resources  CSS et scripts de l'éditeur (assets/), messages, déclaration de l'auto-configuration
 ```
 
-Les dépendances vont dans un seul sens : `web` → `editor` → `tester` → `inspect` → API de Spring Cloud Gateway. `inspect`, `tester` et `editor` ne connaissent ni HTTP ni les templates.
+Les dépendances vont dans un seul sens : `web` → `editor` → `tester` → `inspect` → API de Spring Cloud Gateway, et `web` → `realcall` → `tester`. `inspect`, `tester` et `editor` ne connaissent ni HTTP ni les templates ; `realcall` est le seul paquet, hors `web`, qui émet du HTTP.
 
 ### `autoconfigure`
 
@@ -67,6 +68,20 @@ Les filtres qui n'agissent que sur la réponse sont signalés comme tels. Tous l
 
 **Ajouter un filtre simulé** : écrire une méthode `(Definition, SimulationState) -> String` dans `FilterEffects`, puis l'enregistrer dans la map `EFFECTS`. Elle doit reproduire fidèlement la fabrique de la Gateway et être couverte par un test.
 
+### `realcall`
+
+Le mode « appel réel » du testeur ([ADR 0015](../docs/adr/0015-appel-reel-du-testeur.md)). Ses beans n'existent que si `gateway.ui.tester.real-call.enabled=true`.
+
+| Classe | Rôle |
+|---|---|
+| `RealCaller` | Envoie la requête saisie au serveur local, en boucle locale (`127.0.0.1`, port effectif lu dans `local.server.port`), avec l'en-tête `Host` saisi : elle traverse la vraie Gateway. Le client est un `WebClient` nu, pas le `WebClient.Builder` de l'application : ni ses personnalisations, ni trace réseau, ni suivi des redirections. Délai maximal, erreurs (délai, connexion, TLS) converties en résultat. |
+| `RealCallRequest` | Validation avant envoi : requête valide, et jamais une URL de l'UI (sinon `/tester/call` s'appellerait en boucle). |
+| `BodyExcerptReader`, `BodyExcerpt` | Lecture bornée du corps de réponse : le flux est annulé à la limite, les tampons libérés ; un contenu non textuel n'est pas affiché. |
+| `SensitiveHeaders` | Masque les en-têtes sensibles dans le résultat de l'appel réel seulement ; la simulation affiche la saisie comme avant. |
+| `CallRegistry`, `CallCorrelationFilter` | Route réellement empruntée et URL transmise. L'UI marque sa requête d'un identifiant à usage unique (`X-Gateway-UI-Call`). Le `WebFilter`, en tête de chaîne, retire le marqueur, puis lit `GATEWAY_ROUTE_ATTR` et `GATEWAY_REQUEST_URL_ATTR` juste avant l'envoi de la réponse. Ce n'est pas un `GlobalFilter` : la chaîne des routes, affichée et simulée, reste inchangée. Un identifiant inconnu n'est jamais enregistré. |
+| `RouteComparison` | Route prévue par la simulation face à la route réelle. |
+| `LocalServerAddress`, `RealCallWarning` | Adresse du serveur local (`https` si TLS est configuré) ; avertissement au démarrage. |
+
 ### `editor`
 
 L'éditeur graphique ([ADR 0011](../docs/adr/0011-technique-de-l-editeur.md) à [0013](../docs/adr/0013-catalogue-documente.md)). Toute la logique est en Java ; les scripts de la page se limitent à l'affichage et à l'espace de travail, conservé dans le navigateur.
@@ -84,6 +99,7 @@ L'éditeur graphique ([ADR 0011](../docs/adr/0011-technique-de-l-editeur.md) à 
 
 - **Routage** : `GatewayUiRouter` sert les pages **et** les ressources statiques via une `RouterFunction`. Son mapping est prioritaire sur celui de la Gateway, alors que le handler de ressources statiques de Spring Boot passe après. Une route `Path=/**` masquerait sinon le CSS et le JavaScript (un test le vérifie).
 - **Pages** : `GatewayUiHandler` rend une page complète, ou seulement le fragment à remplacer quand la requête vient de htmx (en-tête `HX-Request`). Chaque écran garde ainsi une URL partageable.
+- **Testeur** : `TesterHandler` sert la page du testeur et l'URL `POST {base-path}/tester/call`. Celle-ci est **toujours** déclarée : mode désactivé, elle répond 404, sinon une route `Path=/**` la capterait et la transmettrait à un service. Le sélecteur « Simulation | Appel réel » est fait de boutons radio et de CSS (`:has()`), sans JavaScript ; le bouton d'appel réel est de type `button`, pour que la touche Entrée ne l'active jamais.
 - **Templates** : `TemplateRenderer` utilise des templates JTE précompilés dans un paquet dédié (`io.github.doriangrelu.gatewayui.internal.jte`). Il n'enregistre aucun `ViewResolver`, n'embarque aucun compilateur et n'interfère pas avec le rendu de l'application hôte.
 - **Éditeur** : `EditorApiHandler` sert l'API JSON de l'éditeur. La page fournit aux scripts leurs textes traduits et, si Spring Security protège l'application contre le CSRF, le jeton que les appels POST renvoient (`CsrfToken`, lu sans dépendre de Spring Security).
 - **htmx** : le script est servi depuis le webjar `org.webjars.npm:htmx.org`. Sa version est lue dans le webjar lui-même, pour ne pas la dupliquer.
@@ -98,7 +114,7 @@ Les textes de l'UI sont dans `src/main/resources/io/github/doriangrelu/gatewayui
 
 ## Templates et style
 
-- Les templates sont dans `src/main/jte` : `layout.jte` porte la structure commune, les autres fichiers correspondent aux pages et aux fragments htmx (`routesTable`, `testerResult`). `testerResult` est aussi rendu par l'API de l'éditeur, pour afficher le même résultat que le Testeur.
+- Les templates sont dans `src/main/jte` : `layout.jte` porte la structure commune, les autres fichiers correspondent aux pages et aux fragments htmx (`routesTable`, `testerResult`, `testerCallResult`). `testerResult` est aussi rendu par l'API de l'éditeur, pour afficher le même résultat que le Testeur.
 - Les scripts de l'éditeur sont des modules JavaScript natifs, sans build ni dépendance, dans `assets/editor/`.
 - Le CSS est dans `src/main/resources/io/github/doriangrelu/gatewayui/assets/gateway-ui.css`. Les couleurs sont des variables CSS, redéfinies pour le thème sombre (`prefers-color-scheme`).
 - Le plugin `jte-maven-plugin` compile les templates pendant `generate-sources`. Une erreur de template est donc une erreur de compilation.
@@ -109,9 +125,10 @@ Les textes de l'UI sont dans `src/main/resources/io/github/doriangrelu/gatewayui
 |---|---|
 | `GatewayUiIntegrationTest` | Gateway complète avec des routes déclarées (dont une route attrape-tout), parcourue via `WebTestClient` : pages, fragments htmx, testeur, services et ressources. La Gateway de test est commune (`GatewayUiIntegrationTestSupport`). |
 | `GatewayUiEditorIntegrationTest`, `GatewayUiCatalogIntegrationTest` | API et page de l'éditeur, catalogue, et cohérence des textes du catalogue avec les fabriques réelles. |
-| `GatewayUiCsrfIntegrationTest` | Appels POST de l'éditeur avec la protection CSRF de Spring Security. |
-| `GatewayUiAutoConfigurationTest` | Conditions d'activation. |
-| Tests unitaires de `inspect`, `tester` et `editor` | Arguments déclarés, ordres, regroupement des services, simulation des filtres, saisie du testeur, modèle d'édition, YAML, conseils, catalogue. |
+| `GatewayUiCsrfIntegrationTest` | Appels POST de l'éditeur et de l'appel réel avec la protection CSRF de Spring Security. |
+| `GatewayUiRealCallIntegrationTest` | Mode appel réel activé, sur un vrai serveur : un service de test servi par l'application elle-même, derrière des routes de la Gateway. Réponse, corps, délai, troncature, 401, refus des URL de l'UI, route réelle et écart avec la simulation, marqueur jamais transmis, aucun secret journalisé. |
+| `GatewayUiAutoConfigurationTest`, `GatewayUiPropertiesTest` | Conditions d'activation ; liaison et valeurs par défaut des propriétés, ancien constructeur. |
+| Tests unitaires de `inspect`, `tester`, `editor` et `realcall` | Arguments déclarés, ordres, regroupement des services, simulation des filtres, saisie du testeur, modèle d'édition, YAML, conseils, catalogue ; en-têtes sensibles, extrait du corps, registre et filtre de corrélation. |
 
 ```bash
 ../mvnw -pl gateway-ui-autoconfigure verify

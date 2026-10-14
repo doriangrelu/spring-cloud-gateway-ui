@@ -60,3 +60,18 @@ gateway:
       payments:
         url: http://payments.shop.svc.cluster.local:8080
         display-name: Paiements
+
+---
+# Mode « appel réel » du testeur (ADR 0015), avec le profil real-call :
+#   ./mvnw -f gateway-ui-sample/pom.xml spring-boot:run -Dspring-boot.run.profiles=real-call
+# Les services de l'exemple sont fictifs : la Gateway répond par une erreur, affichée telle quelle.
+spring:
+  config:
+    activate:
+      on-profile: real-call
+
+gateway:
+  ui:
+    tester:
+      real-call:
+        enabled: true

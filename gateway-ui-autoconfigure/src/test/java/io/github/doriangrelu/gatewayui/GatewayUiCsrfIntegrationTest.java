@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * L'éditeur reste utilisable quand l'application hôte active la protection CSRF de Spring Security (ADR 0011) : la
  * page fournit le jeton, que les scripts renvoient dans leurs appels POST.
  */
-@SpringBootTest(properties = "gateway.ui.enabled=true")
+@SpringBootTest(properties = { "gateway.ui.enabled=true", "gateway.ui.tester.real-call.enabled=true" })
 class GatewayUiCsrfIntegrationTest {
 
     private static final String YAML_REQUEST = "{\"routes\": [], \"comments\": []}";
@@ -61,6 +61,26 @@ class GatewayUiCsrfIntegrationTest {
                 .expectStatus().isForbidden();
         client.post().uri("/gateway-ui/api/editor/yaml").cookie("SESSION", session).header(header, token)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(YAML_REQUEST)
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
+    void realCallsAreAcceptedOnlyWithTheTokenOfTheTesterPage() {
+        final WebTestClient client = WebTestClient.bindToApplicationContext(context).build();
+        final EntityExchangeResult<String> page = client.get().uri("/gateway-ui/tester").exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).returnResult();
+        final String session = page.getResponseCookies().getFirst("SESSION").getValue();
+        final Matcher headers = Pattern.compile("hx-headers=\"\\{&#34;([^&]+)&#34;: &#34;([^&]+)&#34;}\"").matcher(page.getResponseBody());
+        assertThat(headers.find()).as("hx-headers").isTrue();
+
+        client.post().uri("/gateway-ui/tester/call").cookie("SESSION", session)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED).bodyValue("path=/api")
+                .exchange()
+                .expectStatus().isForbidden();
+        client.post().uri("/gateway-ui/tester/call").cookie("SESSION", session).header(headers.group(1), headers.group(2))
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED).bodyValue("path=/api")
                 .exchange()
                 .expectStatus().isOk();
     }

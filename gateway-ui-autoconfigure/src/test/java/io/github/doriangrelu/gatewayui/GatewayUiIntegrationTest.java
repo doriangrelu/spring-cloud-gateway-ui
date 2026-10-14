@@ -17,13 +17,21 @@ package io.github.doriangrelu.gatewayui;
 
 import java.net.URI;
 
+import io.github.doriangrelu.gatewayui.internal.realcall.LocalServerAddress;
+import io.github.doriangrelu.gatewayui.internal.realcall.RealCallWarning;
+import io.github.doriangrelu.gatewayui.internal.realcall.RealCaller;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GatewayUiIntegrationTest extends GatewayUiIntegrationTestSupport {
+
+    @Autowired
+    private ApplicationContext context;
 
     @Test
     void listsRoutesInEvaluationOrder() {
@@ -74,6 +82,36 @@ class GatewayUiIntegrationTest extends GatewayUiIntegrationTestSupport {
                 .expectStatus().isOk()
                 .expectBody(String.class).value(body -> assertThat(body)
                         .contains("http://users.test:8080/v2/users/7"));
+    }
+
+    @Test
+    void realCallIsAbsentByDefault() {
+        assertThat(context.getBeanProvider(RealCaller.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(LocalServerAddress.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(RealCallWarning.class).getIfAvailable()).isNull();
+        client.get().uri("/gateway-ui/tester?method=GET&path=/api/orders/42").exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> assertThat(body)
+                        .doesNotContain("tester-call-body", "Send for real", "really be sent", "tester-mode", "hx-params"));
+    }
+
+    @Test
+    void realCallUrlAnswers404WhenDisabledDespiteTheCatchAllRoute() {
+        // Sans l'URL déclarée par l'UI, la route catch-all Path=/** transmettrait la requête à fallback.test
+        client.post().uri("/gateway-ui/tester/call")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue("method=DELETE&path=/api/orders/42")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody(String.class).value(body -> assertThat(body).contains("Real calls are not enabled"));
+    }
+
+    @Test
+    void simulationKeepsShowingTheHeadersAsTyped() {
+        client.get().uri(URI.create("/gateway-ui/tester?method=GET&path=%2Fapi%2Forders%2F42&headers=Authorization%3A%20Bearer%20abc"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> assertThat(body).contains("Bearer abc").doesNotContain("••••"));
     }
 
     @Test

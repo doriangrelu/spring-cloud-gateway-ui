@@ -22,7 +22,7 @@ Un starter à ajouter, une propriété à activer, et l'UI est disponible sur `/
 | **Détail d'une route** | Le parcours d'une requête : prédicats → chaîne de filtres → cible. La chaîne mélange filtres globaux et filtres de route dans **l'ordre réel d'exécution**, calculé comme le fait la Gateway. |
 | **Services** | Les routes regroupées par service cible, qu'il soit déclaré en configuration ou déduit des URI des routes. |
 | **Filtres globaux** | L'ordre effectif de chaque filtre global. Les filtres sans ordre explicite sont signalés, par exemple un `@Order` posé sur une méthode `@Bean`, que la Gateway ignore. |
-| **Testeur** | Pour une requête donnée (méthode, hôte, chemin, en-têtes, IP) : la route retenue, les routes **masquées** par une route prioritaire, le chemin réécrit étape par étape et la requête transmise au service. **Aucune requête n'est envoyée.** |
+| **Testeur** | Pour une requête donnée (méthode, hôte, chemin, en-têtes, IP) : la route retenue, les routes **masquées** par une route prioritaire, le chemin réécrit étape par étape et la requête transmise au service. **Aucune requête n'est envoyée.** Si l'exploitant l'active, un mode **Appel réel** envoie la requête à la Gateway et affiche la réponse obtenue, la route réellement empruntée et l'URL transmise (voir [Appel réel](#appel-réel-du-testeur)). |
 | **Éditeur** | Modifier les routes existantes ou en créer de nouvelles sur un canevas, avec l'aide du catalogue et des conseils (identifiant en double, regex invalide, `Path=/**`, secret en clair...). La route éditée se teste avec le même testeur, seule ou dans la configuration, puis s'exporte en YAML, placeholders `${...}` d'origine compris. **La Gateway n'est jamais modifiée** : le travail reste dans le navigateur. |
 | **Catalogue** | Tous les prédicats et filtres disponibles dans votre Gateway, classés par catégorie, avec pour les plus courants une explication, la description de chaque argument et un exemple. Les filtres maison sont signalés. |
 
@@ -117,6 +117,9 @@ Ouvrez ensuite `http://<votre-gateway>/gateway-ui`.
 | `gateway.ui.services.<nom>.url` | | URL du service. Les routes qui pointent vers le même schéma, hôte et port lui sont rattachées. |
 | `gateway.ui.services.<nom>.display-name` | `<nom>` | Libellé affiché. |
 | `gateway.ui.services.<nom>.route-ids` | | Routes rattachées explicitement au service. |
+| `gateway.ui.tester.real-call.enabled` | `false` | Active le mode **Appel réel** du testeur : l'UI envoie alors de vraies requêtes à la Gateway, toutes méthodes comprises. À ne jamais activer sur une UI non protégée. |
+| `gateway.ui.tester.real-call.timeout` | `5s` | Délai maximal d'un appel réel ; au-delà, l'appel est interrompu. |
+| `gateway.ui.tester.real-call.max-body-size` | `64KB` | Taille maximale de l'extrait du corps de réponse affiché ; la lecture s'arrête au-delà. |
 
 ```yaml
 gateway:
@@ -129,6 +132,28 @@ gateway:
       payments:
         url: http://payments.shop.svc.cluster.local:8080
         route-ids: [ payments-v1, payments-v2 ]
+```
+
+### Appel réel du testeur
+
+Par défaut, le testeur simule : il n'envoie rien. Avec `gateway.ui.tester.real-call.enabled: true`, un sélecteur **Simulation | Appel réel** apparaît dans le testeur ([ADR 0015](docs/adr/0015-appel-reel-du-testeur.md)). En mode Appel réel, la requête saisie, corps compris pour `POST`, `PUT`, `PATCH` et `DELETE`, est envoyée **à la Gateway elle-même**, comme le ferait un client : sécurité de votre application, sélection de route, filtres, rate limiters et circuit breakers réels. L'UI affiche le statut, la durée, les en-têtes (valeurs sensibles masquées), un extrait du corps, la route réellement empruntée comparée à la simulation, et l'URL transmise au service.
+
+À savoir :
+
+- **L'appel ne porte pas votre session de l'UI.** Si vos routes sont protégées, saisissez vos en-têtes d'authentification (`Authorization`...) dans les en-têtes de la requête ; une aide s'affiche sur une réponse 401 ou 403.
+- **L'IP saisie ne vaut que pour la simulation** : l'appel réel part du serveur lui-même (`127.0.0.1`).
+- **Avec TLS** (`server.ssl.*`), l'appel utilise la confiance par défaut de la JVM : un certificat qu'elle ne reconnaît pas donne une erreur explicite.
+- **Les en-têtes de la page testeur figurent dans son URL**, pour qu'un lien partagé rejoue la même simulation. N'y saisissez pas de vrais secrets hors appel réel : l'URL peut finir dans l'historique ou être partagée. Le mode et le corps, eux, n'y figurent jamais.
+
+```yaml
+gateway:
+  ui:
+    enabled: true
+    tester:
+      real-call:
+        enabled: true
+        timeout: 5s
+        max-body-size: 64KB
 ```
 
 ## En production
@@ -196,6 +221,7 @@ Le client `gateway-ui` doit déclarer `https://<votre-gateway>/login/oauth2/code
 ### Ce que l'UI garantit de son côté
 
 - Elle est en **lecture seule** : elle ne modifie pas les routes et n'appelle jamais les services. L'éditeur produit du YAML à reporter dans votre configuration ; son travail reste dans le navigateur, et ses appels POST sont compatibles avec la protection CSRF de Spring Security.
+- **Seule exception, sur votre décision** : le mode Appel réel du testeur (`gateway.ui.tester.real-call.enabled`, désactivé par défaut). Activé, il permet à quiconque accède à l'UI d'envoyer de vraies requêtes à travers la Gateway, y compris des écritures : **protégez impérativement l'UI** avant de l'activer. Un avertissement est journalisé au démarrage. L'UI n'y ajoute qu'un `WebFilter` sans effet sur les requêtes qu'elle n'a pas émises, pour relever la route empruntée.
 - Ses réponses portent des en-têtes de sécurité stricts (`Content-Security-Policy` limitée aux ressources de l'UI, interdiction d'intégration dans une frame, etc.). Ils ne s'appliquent qu'aux pages de l'UI, jamais aux routes de votre Gateway.
 
 ## Compatibilité
@@ -241,7 +267,11 @@ Chaque ligne mineure supporte une génération de Spring Cloud et la génératio
 ./mvnw -f gateway-ui-sample/pom.xml spring-boot:run
 ```
 
-L'UI est alors sur http://localhost:8080/gateway-ui.
+L'UI est alors sur http://localhost:8080/gateway-ui. Pour essayer le mode Appel réel du testeur, lancez l'exemple avec le profil `real-call` :
+
+```bash
+./mvnw -f gateway-ui-sample/pom.xml spring-boot:run -Dspring-boot.run.profiles=real-call
+```
 
 ## Contribuer
 
